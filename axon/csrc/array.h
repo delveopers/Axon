@@ -19,6 +19,11 @@ extern "C" {
   void delete_shape(Array* self);
   void delete_data(Array* self);
   void delete_strides(Array* self);
+
+  Array* add_array(Array* a, Array* b);
+  Array* add_scalar_array(Array* a, float b);
+
+  void print_tensor(Array* self);
 }
 
 #endif  //!__ARRAY__H__
