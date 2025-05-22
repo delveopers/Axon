@@ -106,6 +106,102 @@ Array* add_scalar_array(Array* a, float b) {
   return create_array(out, a->ndim, a->shape, a->size);
 }
 
+Array* sub_array(Array* a, Array* b) {
+  if (a == NULL || b == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != b->ndim) {
+    fprintf(stderr, "Tensors must have the same no of dims %d and %d for addition\n", a->ndim, b->ndim);
+    exit(1);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(1);
+  }
+  sub_ops(a->data, b->data, out, a->size);
+  return create_array(out, a->ndim, a->shape, a->size);
+}
+
+Array* sub_scalar_array(Array* a, float b) {
+  if (a == NULL || b == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(1);
+  }
+  sub_scalar_ops(a->data, b, out, a->size);
+  return create_array(out, a->ndim, a->shape, a->size);
+}
+
+Array* mul_array(Array* a, Array* b) {
+  if (a == NULL || b == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != b->ndim) {
+    fprintf(stderr, "Tensors must have the same no of dims %d and %d for addition\n", a->ndim, b->ndim);
+    exit(1);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(1);
+  }
+  mul_ops(a->data, b->data, out, a->size);
+  return create_array(out, a->ndim, a->shape, a->size);
+}
+
+Array* mul_scalar_array(Array* a, float b) {
+  if (a == NULL || b == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(1);
+  }
+  mul_scalar_ops(a->data, b, out, a->size);
+  return create_array(out, a->ndim, a->shape, a->size);
+}
+
+Array* div_array(Array* a, Array* b) {
+  if (a == NULL || b == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != b->ndim) {
+    fprintf(stderr, "Tensors must have the same no of dims %d and %d for addition\n", a->ndim, b->ndim);
+    exit(1);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(1);
+  }
+  div_ops(a->data, b->data, out, a->size);
+  return create_array(out, a->ndim, a->shape, a->size);
+}
+
+Array* div_scalar_array(Array* a, float b) {
+  if (a == NULL || b == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(1);
+  }
+  div_scalar_ops(a->data, b, out, a->size);
+  return create_array(out, a->ndim, a->shape, a->size);
+}
+
 // helper function to truncate elements in a single row
 void truncate_row(const float* row, int length, int max_display, char* result) {
   strcat(result, "  [");
