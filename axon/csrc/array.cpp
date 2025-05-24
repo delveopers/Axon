@@ -75,7 +75,7 @@ void delete_strides(Array* self) {
 }
 
 Array* add_array(Array* a, Array* b) {
-  if (a == NULL || b == NULL) {
+  if (a == NULL) {
     fprintf(stderr, "Array value pointers are null!\n");
     exit(EXIT_FAILURE);
   }
@@ -93,7 +93,7 @@ Array* add_array(Array* a, Array* b) {
 }
 
 Array* add_scalar_array(Array* a, float b) {
-  if (a == NULL || b == NULL) {
+  if (a == NULL) {
     fprintf(stderr, "Array value pointers are null!\n");
     exit(EXIT_FAILURE);
   }
@@ -107,12 +107,12 @@ Array* add_scalar_array(Array* a, float b) {
 }
 
 Array* sub_array(Array* a, Array* b) {
-  if (a == NULL || b == NULL) {
+  if (a == NULL) {
     fprintf(stderr, "Array value pointers are null!\n");
     exit(EXIT_FAILURE);
   }
   if (a->ndim != b->ndim) {
-    fprintf(stderr, "Tensors must have the same no of dims %d and %d for addition\n", a->ndim, b->ndim);
+    fprintf(stderr, "Tensors must have the same no of dims %d and %d for subtraction\n", a->ndim, b->ndim);
     exit(1);
   }
   float* out = (float*)malloc(a->size * sizeof(float));
@@ -125,7 +125,7 @@ Array* sub_array(Array* a, Array* b) {
 }
 
 Array* sub_scalar_array(Array* a, float b) {
-  if (a == NULL || b == NULL) {
+  if (a == NULL) {
     fprintf(stderr, "Array value pointers are null!\n");
     exit(EXIT_FAILURE);
   }
@@ -139,12 +139,12 @@ Array* sub_scalar_array(Array* a, float b) {
 }
 
 Array* mul_array(Array* a, Array* b) {
-  if (a == NULL || b == NULL) {
+  if (a == NULL) {
     fprintf(stderr, "Array value pointers are null!\n");
     exit(EXIT_FAILURE);
   }
   if (a->ndim != b->ndim) {
-    fprintf(stderr, "Tensors must have the same no of dims %d and %d for addition\n", a->ndim, b->ndim);
+    fprintf(stderr, "Tensors must have the same no of dims %d and %d for multiplication\n", a->ndim, b->ndim);
     exit(1);
   }
   float* out = (float*)malloc(a->size * sizeof(float));
@@ -157,7 +157,7 @@ Array* mul_array(Array* a, Array* b) {
 }
 
 Array* mul_scalar_array(Array* a, float b) {
-  if (a == NULL || b == NULL) {
+  if (a == NULL) {
     fprintf(stderr, "Array value pointers are null!\n");
     exit(EXIT_FAILURE);
   }
@@ -171,12 +171,12 @@ Array* mul_scalar_array(Array* a, float b) {
 }
 
 Array* div_array(Array* a, Array* b) {
-  if (a == NULL || b == NULL) {
+  if (a == NULL) {
     fprintf(stderr, "Array value pointers are null!\n");
     exit(EXIT_FAILURE);
   }
   if (a->ndim != b->ndim) {
-    fprintf(stderr, "Tensors must have the same no of dims %d and %d for addition\n", a->ndim, b->ndim);
+    fprintf(stderr, "Tensors must have the same no of dims %d and %d for divison\n", a->ndim, b->ndim);
     exit(1);
   }
   float* out = (float*)malloc(a->size * sizeof(float));
@@ -189,7 +189,7 @@ Array* div_array(Array* a, Array* b) {
 }
 
 Array* div_scalar_array(Array* a, float b) {
-  if (a == NULL || b == NULL) {
+  if (a == NULL) {
     fprintf(stderr, "Array value pointers are null!\n");
     exit(EXIT_FAILURE);
   }
@@ -266,5 +266,5 @@ void format_tensor(const float* data, const int* shape, int ndim, int level, cha
 void print_tensor(Array* self) {
   char result[4096] = "";
   format_tensor(self->data, self->shape, self->ndim, 0, result);
-  printf("axon.tensor(%s)\n", result);
+  printf("axon.array(%s)\n", result);
 }

@@ -1,3 +1,10 @@
+/**
+  @file array.h header file for array.cpp & array
+  * compile it as:
+    *- '.so': g++ -shared -fPIC -o libarray.so array.cpp ops.cpp
+    *- '.dll': g++ -shared -o libarray.dll array.cpp ops.cpp
+*/
+
 #ifndef __ARRAY__H__
 #define __ARRAY__H__
 
@@ -21,13 +28,13 @@ extern "C" {
   void delete_strides(Array* self);
 
   Array* add_array(Array* a, Array* b);
-  Array* add_scalar_array(Array* a, float b);
+  Array* add_array_array(Array* a, float b);
   Array* sub_array(Array* a, Array* b);
-  Array* sub_scalar_array(Array* a, float b);
+  Array* sub_array_array(Array* a, float b);
   Array* mul_array(Array* a, Array* b);
-  Array* mul_scalar_array(Array* a, float b);
+  Array* mul_array_array(Array* a, float b);
   Array* div_array(Array* a, Array* b);
-  Array* div_scalar_array(Array* a, float b);
+  Array* div_array_array(Array* a, float b);
 
   void print_tensor(Array* self);
 }
