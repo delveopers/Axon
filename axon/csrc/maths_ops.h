@@ -1,5 +1,5 @@
-#ifndef __OPS__H__
-#define __OPS__H__
+#ifndef __MATHS_OPS__H__
+#define __MATHS_OPS__H__
 
 #include <stddef.h>
 
@@ -12,6 +12,13 @@ extern "C" {
   void mul_scalar_ops(float* a, float b, float* out, size_t size);
   void div_ops(float* a, float* b, float* out, size_t size);
   void div_scalar_ops(float* a, float b, float* out, size_t size);
+
+  void sin_ops(float* a, float* out, size_t size);
+  void cos_ops(float* a, float* out, size_t size);
+  void tan_ops(float* a, float* out, size_t size);
+  void sinh_ops(float* a, float* out, size_t size);
+  void cosh_ops(float* a, float* out, size_t size);
+  void tanh_ops(float* a, float* out, size_t size);
 }
 
 #endif  //!__OPS__H__
