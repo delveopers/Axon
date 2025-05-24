@@ -1,6 +1,9 @@
 # Prerequisites
 *.d
 
+test.py
+extra.py
+
 # Compiled Object files
 *.slo
 *.lo
