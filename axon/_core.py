@@ -1,16 +1,52 @@
 from ._cbase import CArray, lib
-import ctypes
-from ctypes import *
+from ctypes import c_float, c_size_t, c_int
 from typing import *
-from helpers.shape import get_shape, flatten
+from .helpers.shape import get_shape, flatten
 
 class array:
-  def __init__(self, data: Union[List[int, float], int, float]):
-    temp_shape, temp_flatten = get_shape(data), flatten(data)
-    temp_ndim = len(temp_shape)
-    if isinstance(data, CArray):
-      self.data = data
+  def __init__(self, data: Union[List[Any], int, float]):
+    if isinstance(data, (CArray, array)):
+      self.data, self.shape = data, []
+      self.size, self.ndim, self.value = 0, 0, None
     else:
-      self.data = lib.create_array(c_float(data), c_size_t(temp_ndim), POINTER(c_int(temp_shape)), c_size_t(len(temp_flatten)))
-    self.shape, self.size, self.ndim = temp_shape, len(temp_flatten), temp_ndim
-    del temp_ndim, temp_shape, temp_flatten
+      flat, shape = flatten(data), get_shape(data)
+      size, ndim = len(flat), len(shape)
+
+      self._float_arr = (c_float * size)(*flat)
+      self._shape_arr = (c_int * ndim)(*shape)
+
+      self.data = lib.create_array(self._float_arr, c_size_t(ndim), self._shape_arr, c_size_t(size))
+      self.shape, self.size, self.ndim, self.value = shape, size, ndim, data
+
+  def __repr__(self):
+    return f"array({self.value})"
+
+  def __str__(self):
+    lib.print_tensor(self.data)
+    return ""
+
+  def __add__(self, other):
+    if isinstance(other, (int, float)):
+      result_ptr = lib.add_scalar_array(self.data, c_float(other))
+    else:
+      other = other if isinstance(other, (CArray, array)) else array(other)
+      result_ptr = lib.add_array(self.data, other.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim = self.shape, self.size, self.ndim
+    return out
+
+  def __radd__(self, other):
+    return self + other
+
+  def __sub__(self, other):
+    if isinstance(other, (int, float)):
+      result_ptr = lib.sub_scalar_array(self.data, c_float(other))
+    else:
+      other = other if isinstance(other, (CArray, array)) else array(other)
+      result_ptr = lib.sub_array(self.data, other.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim = self.shape, self.size, self.ndim
+    return out
+
+  def __rsub__(self, other):
+    return self + other
