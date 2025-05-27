@@ -2,7 +2,7 @@ import ctypes, os
 from ctypes import Structure, c_float, c_int, c_size_t, POINTER
 from typing import *
 
-lib_path = os.path.join(os.path.dirname(__file__), 'build/libarray.so')
+lib_path = os.path.join(os.path.dirname(__file__), '../build/libarray.so')
 lib = ctypes.CDLL(lib_path)
 
 class CArray(Structure):
