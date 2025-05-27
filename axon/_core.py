@@ -16,7 +16,7 @@ class array:
       self._shape_arr = (c_int * ndim)(*shape)
 
       self.data = lib.create_array(self._float_arr, c_size_t(ndim), self._shape_arr, c_size_t(size))
-      self.shape, self.size, self.ndim, self.value = shape, size, ndim, data
+      self.shape, self.size, self.ndim, self.value = tuple(shape), size, ndim, data
 
   def __repr__(self):
     return f"array({self.value})"
@@ -27,7 +27,7 @@ class array:
 
   def __add__(self, other):
     if isinstance(other, (int, float)):
-      result_ptr = lib.add_scalar_array(self.data, c_float(other))
+      result_ptr = lib.add_scalar_array(self.data, c_float(other)).contents
     else:
       other = other if isinstance(other, (CArray, array)) else array(other)
       result_ptr = lib.add_array(self.data, other.data).contents
@@ -40,7 +40,7 @@ class array:
 
   def __sub__(self, other):
     if isinstance(other, (int, float)):
-      result_ptr = lib.sub_scalar_array(self.data, c_float(other))
+      result_ptr = lib.sub_scalar_array(self.data, c_float(other)).contents
     else:
       other = other if isinstance(other, (CArray, array)) else array(other)
       result_ptr = lib.sub_array(self.data, other.data).contents
@@ -50,3 +50,65 @@ class array:
 
   def __rsub__(self, other):
     return self + other
+
+  def __mul__(self, other):
+    if isinstance(other, (int, float)):
+      result_ptr = lib.mul_scalar_array(self.data, c_float(other)).contents
+    else:
+      other = other if isinstance(other, (CArray, array)) else array(other)
+      result_ptr = lib.mul_array(self.data, other.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim = self.shape, self.size, self.ndim
+    return out
+
+  def __rmul__(self, other):
+    return self + other
+
+  def __truediv__(self, other):
+    if isinstance(other, (int, float)):
+      result_ptr = lib.div_scalar_array(self.data, c_float(other)).contents
+    else:
+      other = other if isinstance(other, (CArray, array)) else array(other)
+      result_ptr = lib.div_array(self.data, other.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim = self.shape, self.size, self.ndim
+    return out
+
+  def __rtruediv__(self, other):
+    return self + other
+
+  def sin(self):
+    result_ptr = lib.sin_array(self.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim = self.shape, self.size, self.ndim
+    return out
+
+  def cos(self):
+    result_ptr = lib.cos_array(self.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim = self.shape, self.size, self.ndim
+    return out
+
+  def tan(self):
+    result_ptr = lib.tan_array(self.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim = self.shape, self.size, self.ndim
+    return out
+
+  def sinh(self):
+    result_ptr = lib.sinh_array(self.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim = self.shape, self.size, self.ndim
+    return out
+
+  def cosh(self):
+    result_ptr = lib.cosh_array(self.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim = self.shape, self.size, self.ndim
+    return out
+
+  def tanh(self):
+    result_ptr = lib.tanh_array(self.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim = self.shape, self.size, self.ndim
+    return out

@@ -33,12 +33,20 @@ lib.print_tensor.restype = None
 # maths ops ----
 lib.add_array.argtypes = [POINTER(CArray), POINTER(CArray)]
 lib.add_array.restype = POINTER(CArray)
+lib.add_scalar_array.argtypes = [POINTER(CArray), c_float]
+lib.add_scalar_array.restype = POINTER(CArray)
 lib.sub_array.argtypes = [POINTER(CArray), POINTER(CArray)]
 lib.sub_array.restype = POINTER(CArray)
+lib.sub_scalar_array.argtypes = [POINTER(CArray), c_float]
+lib.sub_scalar_array.restype = POINTER(CArray)
 lib.mul_array.argtypes = [POINTER(CArray), POINTER(CArray)]
 lib.mul_array.restype = POINTER(CArray)
+lib.mul_scalar_array.argtypes = [POINTER(CArray), c_float]
+lib.mul_scalar_array.restype = POINTER(CArray)
 lib.div_array.argtypes = [POINTER(CArray), POINTER(CArray)]
 lib.div_array.restype = POINTER(CArray)
+lib.div_scalar_array.argtypes = [POINTER(CArray), c_float]
+lib.div_scalar_array.restype = POINTER(CArray)
 
 lib.sin_array.argtypes = [POINTER(CArray)]
 lib.sin_array.restype = POINTER(CArray)
