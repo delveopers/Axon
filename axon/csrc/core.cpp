@@ -4,6 +4,7 @@
 #include <math.h>
 #include "core.h"
 #include "maths_ops.h"
+#include "helpers.h"
 
 Array* create_array(float* data, size_t ndim, int* shape, size_t size) {
   if (data == NULL) {
@@ -181,5 +182,35 @@ Array* ones_array(int* shape, size_t size, size_t ndim) {
     exit(EXIT_FAILURE);
   }
   ones_array_ops(out, size);
+  return create_array(out, ndim, shape, size);
+}
+
+Array* randn_array(int* shape, size_t size, size_t ndim) {
+  float* out = (float*)malloc(size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(EXIT_FAILURE);
+  }
+  fill_randn(out, size);
+  return create_array(out, ndim, shape, size);
+}
+
+Array* randint_array(int low, int high, int* shape, size_t size, size_t ndim) {
+  float* out = (float*)malloc(size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(EXIT_FAILURE);
+  }
+  fill_randint(out, low, high, size);
+  return create_array(out, ndim, shape, size);
+}
+
+Array* uinform_array(int low, int high, int* shape, size_t size, size_t ndim) {
+  float* out = (float*)malloc(size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(EXIT_FAILURE);
+  }
+  fill_uniform(out, low, high, size);
   return create_array(out, ndim, shape, size);
 }

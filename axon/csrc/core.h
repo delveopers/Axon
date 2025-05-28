@@ -36,6 +36,9 @@ extern "C" {
   Array* zeros_array(int* shape, size_t size, size_t ndim);
   Array* ones_like_array(Array* a);
   Array* ones_array(int* shape, size_t size, size_t ndim);
+  Array* randn_array(int* shape, size_t size, size_t ndim);
+  Array* randint_array(int low, int high, int* shape, size_t size, size_t ndim);
+  Array* uinform_array(int low, int high, int* shape, size_t size, size_t ndim);
 }
 
 #endif  //!__ARRAY__H__
