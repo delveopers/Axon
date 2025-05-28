@@ -86,3 +86,27 @@ void tanh_ops(float* a, float* out, size_t size) {
     out[i] = tanhf(a[i]);
   }
 }
+
+void ones_like_array_ops(float* out, size_t size) {
+  for (int i = 0; i < size; i++) {
+    out[i] = 1.0f;
+  }
+}
+
+void zeros_like_array_ops(float* out, size_t size) {
+  for (int i = 0; i < size; i++) {
+    out[i] = 0.0f;
+  }
+}
+
+void ones_array_ops(float* out, size_t size) {
+  for (int i = 0; i < size; i++) {
+    out[i] = 1.0f;
+  }
+}
+
+void zeros_array_ops(float* out, size_t size) {
+  for (int i = 0; i < size; i++) {
+    out[i] = 0.0f;
+  }
+}

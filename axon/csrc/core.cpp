@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include "core.h"
+#include "maths_ops.h"
 
 Array* create_array(float* data, size_t ndim, int* shape, size_t size) {
   if (data == NULL) {
@@ -16,7 +17,10 @@ Array* create_array(float* data, size_t ndim, int* shape, size_t size) {
 
   Array* self = (Array*)malloc(sizeof(Array));
   self->data = data;
-  self->shape = shape;
+  self->shape = (int*)malloc(ndim * sizeof(int));
+  for (int i = 0; i < ndim; i++) {
+    self->shape[i] = shape[i];
+  }
   self->ndim = ndim;
   self->size = 1;
   for (int i = 0; i < ndim; i++) {
@@ -29,11 +33,11 @@ Array* create_array(float* data, size_t ndim, int* shape, size_t size) {
     exit(EXIT_FAILURE);
   }
   int stride = 1;
-  for (int i = ndim-1; i < 0; i--) {
+  for (int i = ndim-1; i >= 0; i--) {
     self->strides[i] = stride;
     stride *= shape[i];
   }
-  for (int i = ndim-1; i < 0; i--) {
+  for (int i = ndim-1; i >= 0; i--) {
     self->backstrides[ndim - 1 - i] = self->strides[i];
   }
   return self;
@@ -106,7 +110,7 @@ void truncate_row(const float* row, int length, int max_display, char* result) {
   strcat(result, "]");
 }
 
-void format_tensor(const float* data, const int* shape, int ndim, int level, char* result) {
+void format_array(const float* data, const int* shape, int ndim, int level, char* result) {
   if (ndim == 1) {
     truncate_row(data, shape[0], 8, result);
     return;
@@ -117,7 +121,7 @@ void format_tensor(const float* data, const int* shape, int ndim, int level, cha
   for (int i = 0; i < rows_to_display; i++) {
     if (i > 0) strcat(result, ",\n");
     for (int j = 0; j < level + 1; j++) strcat(result, "  ");
-    format_tensor(data + i * shape[1], shape + 1, ndim - 1, level + 1, result);
+    format_array(data + i * shape[1], shape + 1, ndim - 1, level + 1, result);
   }
 
   if (shape[0] > 4) {
@@ -128,14 +132,54 @@ void format_tensor(const float* data, const int* shape, int ndim, int level, cha
     for (int j = 0; j < level + 1; j++) strcat(result, "  ");
     for (int i = shape[0] - 2; i < shape[0]; i++) {
       if (i > shape[0] - 2) strcat(result, ",\n");
-      format_tensor(data + i * shape[1], shape + 1, ndim - 1, level + 1, result);
+      format_array(data + i * shape[1], shape + 1, ndim - 1, level + 1, result);
     }
   }
   strcat(result, "\n]");
 }
 
-void print_tensor(Array* self) {
+void print_array(Array* self) {
   char result[4096] = "";
-  format_tensor(self->data, self->shape, self->ndim, 0, result);
+  format_array(self->data, self->shape, self->ndim, 0, result);
   printf("axon.array(%s)\n", result);
+}
+
+Array* zeros_like_array(Array* a) {
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(EXIT_FAILURE);
+  }
+  zeros_like_array_ops(out, a->size);
+  return create_array(out, a->ndim, a->shape, a->size);
+}
+
+Array* zeros_array(int* shape, size_t size, size_t ndim) {
+  float* out = (float*)malloc(size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(EXIT_FAILURE);
+  }
+  zeros_array_ops(out, size);
+  return create_array(out, ndim, shape, size);
+}
+
+Array* ones_like_array(Array* a) {
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(EXIT_FAILURE);
+  }
+  ones_like_array_ops(out, a->size);
+  return create_array(out, a->ndim, a->shape, a->size);
+}
+
+Array* ones_array(int* shape, size_t size, size_t ndim) {
+  float* out = (float*)malloc(size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(EXIT_FAILURE);
+  }
+  ones_array_ops(out, size);
+  return create_array(out, ndim, shape, size);
 }
