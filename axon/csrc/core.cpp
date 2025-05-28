@@ -3,8 +3,8 @@
 #include <string.h>
 #include <math.h>
 #include "core.h"
-#include "maths_ops.h"
 #include "helpers.h"
+
 
 Array* create_array(float* data, size_t ndim, int* shape, size_t size) {
   if (data == NULL) {
@@ -212,5 +212,26 @@ Array* uinform_array(int low, int high, int* shape, size_t size, size_t ndim) {
     exit(EXIT_FAILURE);
   }
   fill_uniform(out, low, high, size);
+  return create_array(out, ndim, shape, size);
+}
+
+Array* fill_array(float fill_val, int* shape, size_t size, size_t ndim) {
+  float* out = (float*)malloc(size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(EXIT_FAILURE);
+  }
+  fill_array_ops(out, fill_val, size);
+  return create_array(out, ndim, shape, size);
+}
+
+Array* linspace_array(float start, float step, float end, int* shape, size_t size, size_t ndim) {
+  float* out = (float*)malloc(size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(EXIT_FAILURE);
+  }
+  float step_size = (step > 1) ? (end - start) / (step - 1) : 0.0f;
+  linspace_array_ops(out, start, step_size, size);
   return create_array(out, ndim, shape, size);
 }

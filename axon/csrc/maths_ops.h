@@ -19,11 +19,6 @@ extern "C" {
   void sinh_ops(float* a, float* out, size_t size);
   void cosh_ops(float* a, float* out, size_t size);
   void tanh_ops(float* a, float* out, size_t size);
-
-  void zeros_like_array_ops(float* out, size_t size);
-  void zeros_array_ops(float* out, size_t size);
-  void ones_like_array_ops(float* out, size_t size);
-  void ones_array_ops(float* out, size_t size);
 }
 
 #endif  //!__OPS__H__

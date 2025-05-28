@@ -41,13 +41,35 @@ void mul_scalar_ops(float* a, float b, float* out, size_t size) {
 
 void div_ops(float* a, float* b, float* out, size_t size) {
   for (size_t i = 0; i < size; i++) {
-    out[i] = a[i] / b[i];
+    if (b[i] == 0.0f) {
+      if (a[i] > 0.0f) {
+        out[i] = INFINITY;
+      } else if (a[i] < 0.0f) {
+        out[i] = -INFINITY;
+      } else {
+        out[i] = NAN;  // 0/0 case
+      }
+    } else {
+      out[i] = a[i] / b[i];
+    }
   }
 }
 
 void div_scalar_ops(float* a, float b, float* out, size_t size) {
-  for (size_t i = 0; i < size; i++) {
-    out[i] = a[i] / b;
+  if (b == 0.0f) {
+    for (size_t i = 0; i < size; i++) {
+      if (a[i] > 0.0f) {
+        out[i] = INFINITY;
+      } else if (a[i] < 0.0f) {
+        out[i] = -INFINITY;
+      } else {
+        out[i] = NAN;  // 0/0 case
+      }
+    }
+  } else {
+    for (size_t i = 0; i < size; i++) {
+      out[i] = a[i] / b;
+    }
   }
 }
 
@@ -84,29 +106,5 @@ void cosh_ops(float* a, float* out, size_t size) {
 void tanh_ops(float* a, float* out, size_t size) {
   for (size_t i = 0; i < size; i++) {
     out[i] = tanhf(a[i]);
-  }
-}
-
-void ones_like_array_ops(float* out, size_t size) {
-  for (int i = 0; i < size; i++) {
-    out[i] = 1.0f;
-  }
-}
-
-void zeros_like_array_ops(float* out, size_t size) {
-  for (int i = 0; i < size; i++) {
-    out[i] = 0.0f;
-  }
-}
-
-void ones_array_ops(float* out, size_t size) {
-  for (int i = 0; i < size; i++) {
-    out[i] = 1.0f;
-  }
-}
-
-void zeros_array_ops(float* out, size_t size) {
-  for (int i = 0; i < size; i++) {
-    out[i] = 0.0f;
   }
 }
