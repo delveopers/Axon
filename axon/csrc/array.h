@@ -5,6 +5,7 @@
   * compile it as:
     *- '.so': g++ -shared -fPIC -o libarray.so core.cpp array.cpp maths_ops.cpp
     *- '.dll': g++ -shared -o libarray.dll core.cpp array.cpp maths_ops.cpp
+    *- '.dylib': g++ -dynamiclib -o libarray.dylib core.cpp array.cpp maths_ops.cpp
 */
 
 #ifndef __ARRAY__H__
@@ -29,6 +30,11 @@ extern "C" {
   Array* cosh_array(Array* a);
   Array* tan_array(Array* a);
   Array* tanh_array(Array* a);
+  Array* pow_array(Array* a, float* exp);
+  Array* pow_scalar(float* a, Array* exp);
+  Array* transpose_array(Array* a);
+  Array* equal_array(Array* a, Array* b);
+  Array* reshape_array(Array* a, int* new_shape, int new_ndim);
 }
 
 #endif  //!__ARRAY__H__
