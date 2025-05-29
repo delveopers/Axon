@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "core.h"
+#include "core/core.h"
 #include "array.h"
 #include "maths_ops.h"
 #include "utils.h"
@@ -219,7 +219,7 @@ Array* tanh_array(Array* a) {
   return create_array(out, a->ndim, a->shape, a->size);
 }
 
-Array* pow_array(Array* a, float* exp) {
+Array* pow_array(Array* a, float exp) {
   if (a == NULL) {
     fprintf(stderr, "Array value pointers are null!\n");
     exit(EXIT_FAILURE);
@@ -229,11 +229,11 @@ Array* pow_array(Array* a, float* exp) {
     fprintf(stderr, "Memory allocation failed\n");
     exit(1);
   }
-  pow_array_ops(out, exp, a->size);
+  pow_array_ops(a->data, exp, out, a->size);
   return create_array(out, a->ndim, a->shape, a->size);
 }
 
-Array* pow_scalar(float* a, Array* exp) {
+Array* pow_scalar(float a, Array* exp) {
   if (exp == NULL) {
     fprintf(stderr, "Array value pointers are null!\n");
     exit(EXIT_FAILURE);
@@ -243,7 +243,7 @@ Array* pow_scalar(float* a, Array* exp) {
     fprintf(stderr, "Memory allocation failed\n");
     exit(1);
   }
-  pow_scalar_ops(out, exp, exp->size);
+  pow_scalar_ops(a, exp->data, out, exp->size);
   return create_array(out, exp->ndim, exp->shape, exp->size);
 }
 

@@ -12,7 +12,7 @@
 #define __ARRAY__H__
 
 #include <stdlib.h>
-#include "core.h"
+#include "core/core.h"
 
 extern "C" {
   // array ops
@@ -30,8 +30,8 @@ extern "C" {
   Array* cosh_array(Array* a);
   Array* tan_array(Array* a);
   Array* tanh_array(Array* a);
-  Array* pow_array(Array* a, float* exp);
-  Array* pow_scalar(float* a, Array* exp);
+  Array* pow_array(Array* a, float exp);
+  Array* pow_scalar(float a, Array* exp);
   Array* transpose_array(Array* a);
   Array* equal_array(Array* a, Array* b);
   Array* reshape_array(Array* a, int* new_shape, int new_ndim);
