@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include "inc/random.h"
+#include "../inc/random.h"
 #include "helpers.h"
 
 static RNG global_rng;

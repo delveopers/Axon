@@ -5,7 +5,7 @@
 #include "core/core.h"
 #include "array.h"
 #include "maths_ops.h"
-#include "utils.h"
+#include "cpu/utils.h"
 
 Array* add_array(Array* a, Array* b) {
   if (a == NULL) {

@@ -1,7 +1,7 @@
 #ifndef __HELPER__H__
 #define __HELPER__H__
 
-#include "inc/random.h"
+#include "../inc/random.h"
 
 extern "C" {
   void fill_randn(float* out, size_t size);
