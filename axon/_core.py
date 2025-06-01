@@ -131,9 +131,6 @@ class array:
     return out
 
   def reshape(self, new_shape: Union[List[int], Tuple[int]]) -> "array":
-    from .helpers.shape import get_strides
-    from ctypes import c_int
-
     if isinstance(new_shape, tuple):
       new_shape = list(new_shape)
     new_size = 1
