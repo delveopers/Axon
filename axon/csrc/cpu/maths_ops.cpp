@@ -61,6 +61,14 @@ void div_scalar_ops(float* a, float b, float* out, size_t size) {
   }
 }
 
+void pow_array_ops(float* a, float exp, float* out, size_t size) {
+  for (size_t i = 0; i < size; i++) { out[i] = powf(a[i], exp); }
+}
+
+void pow_scalar_ops(float a, float* exp, float* out, size_t size) {
+  for (size_t i = 0; i < size; i++) { out[i] = powf(a, exp[i]); }
+}
+
 void sin_ops(float* a, float* out, size_t size) {
   for (size_t i = 0; i < size; i++) { out[i] = sinf(a[i]); }
 }

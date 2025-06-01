@@ -4,7 +4,7 @@
 #include <math.h>
 #include "core/core.h"
 #include "array.h"
-#include "maths_ops.h"
+#include "cpu/maths_ops.h"
 #include "cpu/utils.h"
 
 Array* add_array(Array* a, Array* b) {

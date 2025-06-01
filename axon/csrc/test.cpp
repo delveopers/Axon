@@ -1,5 +1,5 @@
 // compile & run:
-//      g++ -o run test.cpp array.cpp core.cpp maths_ops.cpp
+//      g++ -o run test.cpp array.cpp core/core.cpp cpu/maths_ops.cpp cpu/utils.cpp cpu/helpers.cpp
 
 #include <stdio.h>
 #include <stddef.h>

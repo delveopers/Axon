@@ -3,7 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include "core.h"
-#include "../helpers.h"
+#include "../cpu/helpers.h"
 
 Array* create_array(float* data, size_t ndim, int* shape, size_t size) {
   if (data == NULL) {
