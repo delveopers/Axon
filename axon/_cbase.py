@@ -27,8 +27,8 @@ lib.delete_shape.argtypes = [POINTER(CArray)]
 lib.delete_shape.restype = None
 lib.delete_strides.argtypes = [POINTER(CArray)]
 lib.delete_strides.restype = None
-lib.print_tensor.argtypes = [POINTER(CArray)]
-lib.print_tensor.restype = None
+lib.print_array.argtypes = [POINTER(CArray)]
+lib.print_array.restype = None
 
 # maths ops ----
 lib.add_array.argtypes = [POINTER(CArray), POINTER(CArray)]
@@ -73,4 +73,29 @@ lib.tan_array.restype = POINTER(CArray)
 lib.tanh_array.argtypes = [POINTER(CArray)]
 lib.tanh_array.restype = POINTER(CArray)
 
+lib.transpose_array.argtypes = [POINTER(CArray)]
+lib.transpose_array.restype = POINTER(CArray)
+lib.equal_array.argtypes = [POINTER(CArray), POINTER(CArray)]
+lib.equal_array.restype = POINTER(CArray)
+lib.reshape_array.argtypes = [POINTER(CArray), POINTER(c_int), c_int]
+lib.reshape_array.restype = POINTER(CArray)
+
 # utils functions ---
+lib.zeros_like_array.argtypes = [POINTER(CArray)]
+lib.zeros_like_array.restype = POINTER(CArray)
+lib.ones_like_array.argtypes = [POINTER(CArray)]
+lib.ones_like_array.restype = POINTER(CArray)
+lib.zeros_array.argtypes = [POINTER(c_int), c_size_t, c_size_t]
+lib.zeros_array.restype = POINTER(CArray)
+lib.ones_array.argtypes = [POINTER(c_int), c_size_t, c_size_t]
+lib.ones_array.restype = POINTER(CArray)
+lib.randn_array.argtypes = [POINTER(c_int), c_size_t, c_size_t]
+lib.randn_array.restype = POINTER(CArray)
+lib.randint_array.argtypes = [c_int, c_int, POINTER(c_int), c_size_t, c_size_t]
+lib.randint_array.restype = POINTER(CArray)
+lib.uinform_array.argtypes = [c_int, c_int, POINTER(c_int), c_size_t, c_size_t]
+lib.uinform_array.restype = POINTER(CArray)
+lib.fill_array.argtypes = [c_float, POINTER(c_int), c_size_t, c_size_t]
+lib.fill_array.restype = POINTER(CArray)
+lib.linspace_array.argtypes = [c_float, c_float, c_float, POINTER(c_int), c_size_t, c_size_t]
+lib.linspace_array.restype = POINTER(CArray)
