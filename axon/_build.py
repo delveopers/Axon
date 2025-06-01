@@ -34,9 +34,11 @@ def find_source_files():
   csrc_dir = base_dir / "csrc"
 
   required_files = [
-    csrc_dir / "core.cpp",
+    csrc_dir / "core/core.cpp",
     csrc_dir / "array.cpp",
-    csrc_dir / "maths_ops.cpp"
+    csrc_dir / "cpu/maths_ops.cpp",
+    csrc_dir / "cpu/helpers.cpp",
+    csrc_dir / "cpu/utils.cpp"
   ]
 
   if all(f.exists() for f in required_files):

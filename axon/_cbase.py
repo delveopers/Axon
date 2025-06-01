@@ -35,18 +35,30 @@ lib.add_array.argtypes = [POINTER(CArray), POINTER(CArray)]
 lib.add_array.restype = POINTER(CArray)
 lib.add_scalar_array.argtypes = [POINTER(CArray), c_float]
 lib.add_scalar_array.restype = POINTER(CArray)
+lib.add_broadcasted_array.argtypes = [POINTER(CArray), POINTER(CArray)]
+lib.add_broadcasted_array.restype = POINTER(CArray)
 lib.sub_array.argtypes = [POINTER(CArray), POINTER(CArray)]
 lib.sub_array.restype = POINTER(CArray)
 lib.sub_scalar_array.argtypes = [POINTER(CArray), c_float]
 lib.sub_scalar_array.restype = POINTER(CArray)
+lib.sub_broadcasted_array.argtypes = [POINTER(CArray), POINTER(CArray)]
+lib.sub_broadcasted_array.restype = POINTER(CArray)
 lib.mul_array.argtypes = [POINTER(CArray), POINTER(CArray)]
 lib.mul_array.restype = POINTER(CArray)
 lib.mul_scalar_array.argtypes = [POINTER(CArray), c_float]
 lib.mul_scalar_array.restype = POINTER(CArray)
+lib.mul_broadcasted_array.argtypes = [POINTER(CArray), POINTER(CArray)]
+lib.mul_broadcasted_array.restype = POINTER(CArray)
 lib.div_array.argtypes = [POINTER(CArray), POINTER(CArray)]
 lib.div_array.restype = POINTER(CArray)
 lib.div_scalar_array.argtypes = [POINTER(CArray), c_float]
 lib.div_scalar_array.restype = POINTER(CArray)
+lib.div_broadcasted_array.argtypes = [POINTER(CArray), POINTER(CArray)]
+lib.div_broadcasted_array.restype = POINTER(CArray)
+lib.pow_array.argtypes = [POINTER(CArray), c_float]
+lib.pow_array.restype = POINTER(CArray)
+lib.pow_array.argtypes = [c_float, POINTER(CArray)]
+lib.pow_array.restype = POINTER(CArray) 
 
 lib.sin_array.argtypes = [POINTER(CArray)]
 lib.sin_array.restype = POINTER(CArray)
@@ -60,3 +72,5 @@ lib.tan_array.argtypes = [POINTER(CArray)]
 lib.tan_array.restype = POINTER(CArray)
 lib.tanh_array.argtypes = [POINTER(CArray)]
 lib.tanh_array.restype = POINTER(CArray)
+
+# utils functions ---
