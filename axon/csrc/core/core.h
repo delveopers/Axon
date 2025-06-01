@@ -6,6 +6,7 @@
   * compile it as:
     *- '.so': g++ -shared -fPIC -o libarray.so core.cpp array.cpp maths_ops.cpp
     *- '.dll': g++ -shared -o libarray.dll core.cpp array.cpp maths_ops.cpp
+    *- 'dylib': g++ -dynamiclib -o libarray.dylib core.cpp array.cpp maths_ops.cpp
 */
 
 #ifndef __CORE__H__
@@ -29,7 +30,17 @@ extern "C" {
   void delete_shape(Array* self);
   void delete_data(Array* self);
   void delete_strides(Array* self);
-  void print_tensor(Array* self);
+  void print_array(Array* self);
+
+  Array* zeros_like_array(Array* a);
+  Array* zeros_array(int* shape, size_t size, size_t ndim);
+  Array* ones_like_array(Array* a);
+  Array* ones_array(int* shape, size_t size, size_t ndim);
+  Array* randn_array(int* shape, size_t size, size_t ndim);
+  Array* randint_array(int low, int high, int* shape, size_t size, size_t ndim);
+  Array* uinform_array(int low, int high, int* shape, size_t size, size_t ndim);
+  Array* fill_array(float fill_val, int* shape, size_t size, size_t ndim);
+  Array* linspace_array(float start, float step, float end, int* shape, size_t size, size_t ndim);
 }
 
 #endif  //!__ARRAY__H__

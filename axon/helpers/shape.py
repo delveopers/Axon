@@ -21,3 +21,16 @@ def get_strides(shape:tuple) -> list:
   for size in reversed(shape[:-1]):
     strides.append(strides[-1] * size)
   return list(reversed(strides))
+
+def transposed_shape(shape):
+  ndim = len(shape)
+  if ndim == 1:
+    return shape  # no transpose for 1D
+  elif ndim == 2:
+    rows, cols = shape
+    return [cols, rows]
+  elif ndim == 3:
+    batch, rows, cols = shape
+    return [batch, cols, rows]
+  else:
+    raise ValueError(f"Unsupported shape dimension: {ndim}")

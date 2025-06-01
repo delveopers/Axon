@@ -12,6 +12,8 @@ extern "C" {
   void mul_scalar_ops(float* a, float b, float* out, size_t size);
   void div_ops(float* a, float* b, float* out, size_t size);
   void div_scalar_ops(float* a, float b, float* out, size_t size);
+  void pow_array_ops(float* a, float exp, float* out, size_t size);
+  void pow_scalar_ops(float a, float* exp, float* out, size_t size);
 
   void sin_ops(float* a, float* out, size_t size);
   void cos_ops(float* a, float* out, size_t size);
@@ -19,6 +21,11 @@ extern "C" {
   void sinh_ops(float* a, float* out, size_t size);
   void cosh_ops(float* a, float* out, size_t size);
   void tanh_ops(float* a, float* out, size_t size);
+
+  void add_broadcasted_array_ops(float* a, float* b, float* out, int* broadcasted_shape, int broadcasted_size, int a_ndim, int b_ndim, int* a_shape, int* b_shape);
+  void sub_broadcasted_array_ops(float* a, float* b, float* out, int* broadcasted_shape, int broadcasted_size, int a_ndim, int b_ndim, int* a_shape, int* b_shape);
+  void div_broadcasted_array_ops(float* a, float* b, float* out, int* broadcasted_shape, int broadcasted_size, int a_ndim, int b_ndim, int* a_shape, int* b_shape);
+  void mul_broadcasted_array_ops(float* a, float* b, float* out, int* broadcasted_shape, int broadcasted_size, int a_ndim, int b_ndim, int* a_shape, int* b_shape);
 }
 
 #endif  //!__OPS__H__

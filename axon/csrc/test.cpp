@@ -1,3 +1,6 @@
+// compile & run:
+//      g++ -o run test.cpp array.cpp core/core.cpp cpu/maths_ops.cpp cpu/utils.cpp cpu/helpers.cpp
+
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -21,16 +24,19 @@ int main() {
   Array* c = add_array(array1, array2);
   Array* d = sub_array(array1, array2);
   Array* e = mul_array(array1, d);
-  print_tensor(array1);
-  print_tensor(array2);
-  print_tensor(c);
-  print_tensor(d);
-  print_tensor(e);
-
+  Array* one = ones_array(shape1, 8, 2);
+  print_array(array1);
+  print_array(array2);
+  print_array(c);
+  print_array(d);
+  print_array(e);
+  print_array(one);
+  
   delete_array(array1);
   delete_array(array2);
   delete_array(c);
   delete_array(d);
   delete_array(e);
+  delete_array(one);
   return 0;
 }
