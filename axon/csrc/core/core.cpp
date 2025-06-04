@@ -5,57 +5,114 @@
 #include "core.h"
 #include "../cpu/helpers.h"
 
-Array* create_array(float* data, size_t ndim, int* shape, size_t size) {
-  if (data == NULL) {
-    fprintf(stderr, "Data value pointers are null!\n");
+Array* create_array(float* data, size_t ndim, int* shape, size_t size, dtype_t dtype) {
+  if (data == NULL || !ndim || !size) {
+    fprintf(stderr, "Invalid input parameters!\n");
     exit(EXIT_FAILURE);
   }
-  if (!ndim || !size) {
-    fprintf(stderr, "Data value pointers are null!\n");
-    exit(EXIT_FAILURE);
-  }
-
+  
   Array* self = (Array*)malloc(sizeof(Array));
-  self->data = data;
-  self->shape = (int*)malloc(ndim * sizeof(int));
-  for (int i = 0; i < ndim; i++) {
-    self->shape[i] = shape[i];
+  if (self == NULL) {
+    fprintf(stderr, "Memory allocation failed for Array struct!\n");
+    exit(EXIT_FAILURE);
   }
+  
+  self->dtype = dtype;
+  self->is_view = 0;
   self->ndim = ndim;
-  self->size = 1;
-  for (int i = 0; i < ndim; i++) {
-    self->size *= shape[i];
+  self->size = size;
+  
+  // Allocate and convert to target dtype
+  self->data = allocate_dtype_array(dtype, size);
+  if (self->data == NULL) {
+    free(self);
+    exit(EXIT_FAILURE);
   }
+  convert_from_float32(data, self->data, dtype, size);
+  
+  // Copy shape and calculate strides
+  self->shape = (int*)malloc(ndim * sizeof(int));
   self->strides = (int*)malloc(sizeof(int) * ndim);
   self->backstrides = (int*)malloc(sizeof(int) * ndim);
-  if (!self->strides || !self->backstrides) {
-    fprintf(stderr, "Couldn't allocate `strides` & `backstrides` pointer!\n");
+  
+  if (!self->shape || !self->strides || !self->backstrides) {
+    // cleanup and exit
+    free(self->data);
+    if (self->shape) free(self->shape);
+    if (self->strides) free(self->strides);
+    if (self->backstrides) free(self->backstrides);
+    free(self);
     exit(EXIT_FAILURE);
   }
+  
+  for (size_t i = 0; i < ndim; i++) {
+    self->shape[i] = shape[i];
+  }
+  
   int stride = 1;
   for (int i = ndim-1; i >= 0; i--) {
     self->strides[i] = stride;
     stride *= shape[i];
   }
-  for (int i = ndim-1; i >= 0; i--) {
+  for (size_t i = 0; i < ndim; i++) {
     self->backstrides[ndim - 1 - i] = self->strides[i];
   }
+  
   return self;
+}
+
+Array* cast_array(Array* self, dtype_t new_dtype) {
+  if (self == NULL) return NULL;
+
+  // converting to float for intermediate processing
+  float* temp_float = convert_to_float32(self->data, self->dtype, self->size);
+  if (temp_float == NULL) return NULL;
+  // creating new array with target dtype - create_array handles conversion
+  Array* result = create_array(temp_float, self->ndim, self->shape, self->size, new_dtype);
+
+  free(temp_float);   // Cleanup temporary float data  
+  return result;
+}
+
+Array* cast_array_simple(Array* self, dtype_t new_dtype) {
+  if (self == NULL) return NULL;
+
+  // using the existing cast_array_dtype function from dtype.h
+  void* new_data = cast_array_dtype(self->data, self->dtype, new_dtype, self->size);
+  if (new_data == NULL) return NULL;
+  
+  // creating array structure with new data
+  Array* result = (Array*)malloc(sizeof(Array));
+  result->data = new_data;
+  result->dtype = new_dtype;
+  result->ndim = self->ndim;
+  result->size = self->size;
+  result->is_view = 0;
+  
+  // copy shape and strides
+  result->shape = (int*)malloc(self->ndim * sizeof(int));
+  result->strides = (int*)malloc(self->ndim * sizeof(int));
+  result->backstrides = (int*)malloc(self->ndim * sizeof(int));
+  
+  memcpy(result->shape, self->shape, self->ndim * sizeof(int));
+  memcpy(result->strides, self->strides, self->ndim * sizeof(int));
+  memcpy(result->backstrides, self->backstrides, self->ndim * sizeof(int));
+  
+  return result;
 }
 
 void delete_array(Array* self) {
   if (self != NULL) {
-    free(self->data);
-    free(self->shape);
-    free(self->strides);
-    free(self->backstrides);
+    if (self->data) free(self->data);
+    if (self->shape) free(self->shape);
+    if (self->strides) free(self->strides);
+    if (self->backstrides) free(self->backstrides);
     free(self);
-    self = NULL;
   }
 }
 
 void delete_shape(Array* self) {
-  if (self != NULL) {
+  if (self != NULL && self->shape != NULL) {
     free(self->shape);
     self->shape = NULL;
   }
@@ -63,17 +120,23 @@ void delete_shape(Array* self) {
 
 void delete_data(Array* self) {
   if (self != NULL) {
-    free(self->data);
-    self->data = NULL;
+    if (self->data) {
+      free(self->data);
+      self->data = NULL;
+    }
   }
 }
 
 void delete_strides(Array* self) {
   if (self != NULL) {
-    free(self->strides);
-    free(self->backstrides);
-    self->strides = NULL;
-    self->backstrides = NULL;
+    if (self->strides) {
+      free(self->strides);
+      self->strides = NULL;
+    }
+    if (self->backstrides) {
+      free(self->backstrides);
+      self->backstrides = NULL;
+    }
   }
 }
 
@@ -139,9 +202,21 @@ void format_array(const float* data, const int* shape, int ndim, int level, char
 }
 
 void print_array(Array* self) {
+  if (self == NULL) {
+    printf("axon.array(NULL)\n");
+    return;
+  }
+
+  // converting to float32 for display purposes
+  float* temp_float = convert_to_float32(self->data, self->dtype, self->size);
+  if (temp_float == NULL) {
+    printf("axon.array(ERROR: Failed to convert for display)\n");
+    return;
+  }
   char result[4096] = "";
-  format_array(self->data, self->shape, self->ndim, 0, result);
-  printf("axon.array(%s)\n", result);
+  format_array(temp_float, self->shape, self->ndim, 0, result);
+  printf("axon.array(%s, dtype=%s)\n", result, get_dtype_name(self->dtype));
+  free(temp_float);   // clean up temporary float data
 }
 
 Array* zeros_like_array(Array* a) {
@@ -151,17 +226,21 @@ Array* zeros_like_array(Array* a) {
     exit(EXIT_FAILURE);
   }
   zeros_like_array_ops(out, a->size);
-  return create_array(out, a->ndim, a->shape, a->size);
+  Array* result = create_array(out, a->ndim, a->shape, a->size, a->dtype);
+  free(out);
+  return result;
 }
 
-Array* zeros_array(int* shape, size_t size, size_t ndim) {
+Array* zeros_array(int* shape, size_t size, size_t ndim, dtype_t dtype) {
   float* out = (float*)malloc(size * sizeof(float));
   if (out == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
     exit(EXIT_FAILURE);
   }
   zeros_array_ops(out, size);
-  return create_array(out, ndim, shape, size);
+  Array* result = create_array(out, ndim, shape, size, dtype);
+  free(out);
+  return result;
 }
 
 Array* ones_like_array(Array* a) {
@@ -171,60 +250,72 @@ Array* ones_like_array(Array* a) {
     exit(EXIT_FAILURE);
   }
   ones_like_array_ops(out, a->size);
-  return create_array(out, a->ndim, a->shape, a->size);
+  Array* result = create_array(out, a->ndim, a->shape, a->size, a->dtype);
+  free(out);
+  return result;
 }
 
-Array* ones_array(int* shape, size_t size, size_t ndim) {
+Array* ones_array(int* shape, size_t size, size_t ndim, dtype_t dtype) {
   float* out = (float*)malloc(size * sizeof(float));
   if (out == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
     exit(EXIT_FAILURE);
   }
   ones_array_ops(out, size);
-  return create_array(out, ndim, shape, size);
+  Array* result = create_array(out, ndim, shape, size, dtype);
+  free(out);
+  return result;
 }
 
-Array* randn_array(int* shape, size_t size, size_t ndim) {
+Array* randn_array(int* shape, size_t size, size_t ndim, dtype_t dtype) {
   float* out = (float*)malloc(size * sizeof(float));
   if (out == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
     exit(EXIT_FAILURE);
   }
   fill_randn(out, size);
-  return create_array(out, ndim, shape, size);
+  Array* result = create_array(out, ndim, shape, size, dtype);
+  free(out);
+  return result;
 }
 
-Array* randint_array(int low, int high, int* shape, size_t size, size_t ndim) {
+Array* randint_array(int low, int high, int* shape, size_t size, size_t ndim, dtype_t dtype) {
   float* out = (float*)malloc(size * sizeof(float));
   if (out == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
     exit(EXIT_FAILURE);
   }
   fill_randint(out, low, high, size);
-  return create_array(out, ndim, shape, size);
+  Array* result = create_array(out, ndim, shape, size, dtype);
+  free(out);
+  return result;
 }
 
-Array* uinform_array(int low, int high, int* shape, size_t size, size_t ndim) {
+Array* uniform_array(int low, int high, int* shape, size_t size, size_t ndim, dtype_t dtype) {
   float* out = (float*)malloc(size * sizeof(float));
   if (out == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
     exit(EXIT_FAILURE);
   }
   fill_uniform(out, low, high, size);
-  return create_array(out, ndim, shape, size);
+  Array* result = create_array(out, ndim, shape, size, dtype);
+  free(out);
+  return result;
 }
 
-Array* fill_array(float fill_val, int* shape, size_t size, size_t ndim) {
+Array* fill_array(float fill_val, int* shape, size_t size, size_t ndim, dtype_t dtype) {
   float* out = (float*)malloc(size * sizeof(float));
   if (out == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
     exit(EXIT_FAILURE);
   }
   fill_array_ops(out, fill_val, size);
-  return create_array(out, ndim, shape, size);
+  Array* result = create_array(out, ndim, shape, size, dtype);
+  free(out);
+  return result;
 }
 
-Array* linspace_array(float start, float step, float end, int* shape, size_t size, size_t ndim) {
+Array* linspace_array(float start, float step, float end, int* shape, size_t size, size_t ndim, dtype_t dtype) {
   float* out = (float*)malloc(size * sizeof(float));
   if (out == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
@@ -232,5 +323,7 @@ Array* linspace_array(float start, float step, float end, int* shape, size_t siz
   }
   float step_size = (step > 1) ? (end - start) / (step - 1) : 0.0f;
   linspace_array_ops(out, start, step_size, size);
-  return create_array(out, ndim, shape, size);
+  Array* result = create_array(out, ndim, shape, size, dtype);
+  free(out);
+  return result;
 }
