@@ -15,7 +15,7 @@
 #include "core/core.h"
 
 extern "C" {
-  // array ops
+  // binary ops
   Array* add_array(Array* a, Array* b);
   Array* add_scalar_array(Array* a, float b);
   Array* add_broadcasted_array(Array* a, Array* b);
@@ -28,6 +28,8 @@ extern "C" {
   Array* div_array(Array* a, Array* b);
   Array* div_scalar_array(Array* a, float b);
   Array* div_broadcasted_array(Array* a, Array* b);
+
+  // unary ops
   Array* sin_array(Array* a);
   Array* sinh_array(Array* a);
   Array* cos_array(Array* a);
@@ -36,9 +38,14 @@ extern "C" {
   Array* tanh_array(Array* a);
   Array* pow_array(Array* a, float exp);
   Array* pow_scalar(float a, Array* exp);
+
+  // shaping ops
   Array* transpose_array(Array* a);
   Array* equal_array(Array* a, Array* b);
   Array* reshape_array(Array* a, int* new_shape, int new_ndim);
+  Array* squeeze_array(Array* a, int axis);
+  Array* expand_dims_array(Array* a, int axis);
+  Array* flatten_array(Array* a);
 }
 
 #endif  //!__ARRAY__H__

@@ -923,3 +923,175 @@ Array* equal_array(Array* a, Array* b) {
   free(out);
   return result;
 }
+
+Array* squeeze_array(Array* a, int axis) {
+  if (a == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  int new_ndim = 0;
+  int* temp_shape = (int*)malloc(a->ndim * sizeof(int));
+  if (temp_shape == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(EXIT_FAILURE);
+  }
+
+  // if axis is -1, remove all dimensions of size 1
+  if (axis == -1) {
+    for (int i = 0; i < a->ndim; i++) {
+      if (a->shape[i] != 1) {
+        temp_shape[new_ndim] = a->shape[i];
+        new_ndim++;
+      }
+    }
+  } else {
+    // validate axis
+    if (axis < 0 || axis >= a->ndim) {
+      fprintf(stderr, "axis %d is out of bounds for array of dimension %zu\n", axis, a->ndim);
+      free(temp_shape);
+      exit(EXIT_FAILURE);
+    }
+    if (a->shape[axis] != 1) {
+      fprintf(stderr, "cannot select an axis to squeeze out which has size not equal to one\n");
+      free(temp_shape);
+      exit(EXIT_FAILURE);
+    }
+    // remove specific axis
+    for (int i = 0; i < a->ndim; i++) {
+      if (i != axis) {
+        temp_shape[new_ndim] = a->shape[i];
+        new_ndim++;
+      }
+    }
+  }
+
+  // handling edge case where all dimensions are squeezed out
+  if (new_ndim == 0) {
+    new_ndim = 1;
+    temp_shape[0] = 1;
+  }
+  int* shape = (int*)malloc(new_ndim * sizeof(int));
+  if (shape == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    free(temp_shape);
+    exit(EXIT_FAILURE);
+  }
+  for (int i = 0; i < new_ndim; i++) {
+    shape[i] = temp_shape[i];
+  }
+  free(temp_shape);
+  
+  // converting array to float32 for computation
+  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
+  if (a_float == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    free(shape);
+    exit(EXIT_FAILURE);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    free(a_float);
+    free(shape);
+    exit(EXIT_FAILURE);
+  }
+  reassign_array_ops(a_float, out, a->size);  // performing squeeze (basically just copy data)
+  dtype_t result_dtype = a->dtype;  // squeeze preserves the original dtype
+  Array* result = create_array(out, new_ndim, shape, a->size, result_dtype);
+  free(a_float);
+  free(out);
+  free(shape);
+  return result;
+}
+
+Array* expand_dims_array(Array* a, int axis) {
+  if (a == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  
+  int new_ndim = a->ndim + 1;
+  if (axis < 0) {
+    axis = new_ndim + axis;   // normalizing negative axis
+  }
+  // validating axis
+  if (axis < 0 || axis >= new_ndim) {
+    fprintf(stderr, "axis %d is out of bounds for array of dimension %d\n", axis, new_ndim);
+    exit(EXIT_FAILURE);
+  }
+  int* shape = (int*)malloc(new_ndim * sizeof(int));
+  if (shape == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(EXIT_FAILURE);
+  }
+
+  // create new shape with expanded dimension
+  int old_idx = 0;
+  for (int i = 0; i < new_ndim; i++) {
+    if (i == axis) {
+      shape[i] = 1;  // insert new dimension of size 1
+    } else {
+      shape[i] = a->shape[old_idx];
+      old_idx++;
+    }
+  }
+  
+  // converting array to float32 for computation
+  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
+  if (a_float == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    free(shape);
+    exit(EXIT_FAILURE);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    free(a_float);
+    free(shape);
+    exit(EXIT_FAILURE);
+  }
+  reassign_array_ops(a_float, out, a->size);   // performing expand_dims (basically just copy data)
+  dtype_t result_dtype = a->dtype;  // expand_dims preserves the original dtype
+  Array* result = create_array(out, new_ndim, shape, a->size, result_dtype);
+  free(a_float);
+  free(out);
+  free(shape);
+  return result;
+}
+
+Array* flatten_array(Array* a) {
+  if (a == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  int new_ndim = 1;
+  int* shape = (int*)malloc(new_ndim * sizeof(int));
+  if (shape == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(EXIT_FAILURE);
+  }
+
+  shape[0] = a->size;   // flattened array has single dimension with size equal to total elements
+  // converting array to float32 for computation
+  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
+  if (a_float == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    free(shape);
+    exit(EXIT_FAILURE);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    free(a_float);
+    free(shape);
+    exit(EXIT_FAILURE);
+  }
+
+  reassign_array_ops(a_float, out, a->size);  // performing flatten (basically just copy data)
+  dtype_t result_dtype = a->dtype;  // flatten preserves the original dtype
+  Array* result = create_array(out, new_ndim, shape, a->size, result_dtype);
+  free(a_float);
+  free(out);
+  free(shape);
+  return result;
+}
