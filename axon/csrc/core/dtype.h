@@ -62,6 +62,8 @@ extern "C" {
   // clamp values for integer types to prevent overflow
   int64_t clamp_to_int_range(double value, dtype_t dtype);
   uint64_t clamp_to_uint_range(double value, dtype_t dtype);
+  int get_dtype_priority(dtype_t dtype);  // get the promotion priority of a dtype (higher = more preferred)
+  dtype_t promote_dtypes(dtype_t dtype1, dtype_t dtype2); // promote two dtypes according to standard promotion rules
 }
 
 #endif  //!__DTYPE__H__

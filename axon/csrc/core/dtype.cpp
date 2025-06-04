@@ -265,3 +265,67 @@ int is_signed_dtype(dtype_t dtype) {
       return 0;
   }
 }
+
+int get_dtype_priority(dtype_t dtype) {
+  // higher numbers = higher priority in promotion
+  switch (dtype) {
+    case DTYPE_BOOL:    return 1;
+    case DTYPE_UINT8:   return 2;
+    case DTYPE_INT8:    return 3;
+    case DTYPE_UINT16:  return 4;
+    case DTYPE_INT16:   return 5;
+    case DTYPE_UINT32:  return 6;
+    case DTYPE_INT32:   return 7;
+    case DTYPE_UINT64:  return 8;
+    case DTYPE_INT64:   return 9;
+    case DTYPE_FLOAT32: return 10;
+    case DTYPE_FLOAT64: return 11;
+    default:            return 0;
+  }
+}
+
+dtype_t promote_dtypes(dtype_t dtype1, dtype_t dtype2) {
+  // ff same dtype, return it
+  if (dtype1 == dtype2) {
+    return dtype1;
+  }
+
+  // float types always win over integer types
+  if (is_float_dtype(dtype1) && is_integer_dtype(dtype2)) {
+    return dtype1;
+  }
+  if (is_float_dtype(dtype2) && is_integer_dtype(dtype1)) {
+    return dtype2;
+  }
+
+  // if both are float types, choose the larger one
+  if (is_float_dtype(dtype1) && is_float_dtype(dtype2)) {
+    return (get_dtype_size(dtype1) >= get_dtype_size(dtype2)) ? dtype1 : dtype2;
+  }
+
+  // if both are integer types, use more complex promotion rules
+  if (is_integer_dtype(dtype1) && is_integer_dtype(dtype2)) {
+    // if one is signed and one is unsigned
+    if (is_signed_dtype(dtype1) != is_signed_dtype(dtype2)) {
+      // if unsigned type is larger or equal, use it
+      dtype_t unsigned_type = is_unsigned_dtype(dtype1) ? dtype1 : dtype2;
+      dtype_t signed_type = is_signed_dtype(dtype1) ? dtype1 : dtype2;
+      if (get_dtype_size(unsigned_type) >= get_dtype_size(signed_type)) {
+        return unsigned_type;
+      } else {
+        // promote to next larger signed type that can hold unsigned values
+        size_t unsigned_size = get_dtype_size(unsigned_type);
+        if (unsigned_size <= 1) return DTYPE_INT16;  // uint8 -> int16
+        if (unsigned_size <= 2) return DTYPE_INT32;  // uint16 -> int32
+        if (unsigned_size <= 4) return DTYPE_INT64;  // uint32 -> int64
+        return DTYPE_FLOAT64; // uint64 -> float64 (can't fit in int64)
+      }
+    }
+
+    // both have same signedness, choose larger size
+    return (get_dtype_size(dtype1) >= get_dtype_size(dtype2)) ? dtype1 : dtype2;
+  }
+
+  // fallback: use priority system
+  return (get_dtype_priority(dtype1) >= get_dtype_priority(dtype2)) ? dtype1 : dtype2;
+}

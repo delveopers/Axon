@@ -69,6 +69,14 @@ void pow_scalar_ops(float a, float* exp, float* out, size_t size) {
   for (size_t i = 0; i < size; i++) { out[i] = powf(a, exp[i]); }
 }
 
+void exp_array_ops(float* a, float* out, size_t size) {
+  for (size_t i = 0; i < size; i++) { out[i] = expf(a[i]); }
+}
+
+void log_array_ops(float* a, float* out, size_t size) {
+  for (size_t i = 0; i < size; i++) { out[i] = logf(a[i]); }
+}
+
 void sin_ops(float* a, float* out, size_t size) {
   for (size_t i = 0; i < size; i++) { out[i] = sinf(a[i]); }
 }

@@ -3,26 +3,55 @@
 #include <string.h>
 #include <math.h>
 #include "core/core.h"
-#include "array.h"
+#include "core/dtype.h"
 #include "cpu/maths_ops.h"
 #include "cpu/utils.h"
+#include "array.h"
 
 Array* add_array(Array* a, Array* b) {
-  if (a == NULL) {
+  if (a == NULL || b == NULL) {
     fprintf(stderr, "Array value pointers are null!\n");
     exit(EXIT_FAILURE);
   }
   if (a->ndim != b->ndim) {
     fprintf(stderr, "arrays must have the same no of dims %d and %d for addition\n", a->ndim, b->ndim);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
+
+  // checking if shapes match
+  for (size_t i = 0; i < a->ndim; i++) {
+    if (a->shape[i] != b->shape[i]) {
+      fprintf(stderr, "arrays must have the same shape for addition\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  // convering both arrays to float32 for computation
+  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
+  float* b_float = convert_to_float32(b->data, b->dtype, b->size);
+
+  if (a_float == NULL || b_float == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    if (b_float) free(b_float);
+    exit(EXIT_FAILURE);
+  }
+
   float* out = (float*)malloc(a->size * sizeof(float));
   if (out == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
-    exit(1);
+    free(a_float);
+    free(b_float);
+    exit(EXIT_FAILURE);
   }
-  add_ops(a->data, b->data, out, a->size);
-  return create_array(out, a->ndim, a->shape, a->size);
+  add_ops(a_float, b_float, out, a->size);  // Perform the addition operation
+  dtype_t result_dtype = promote_dtypes(a->dtype, b->dtype);  // determining result dtype
+  Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
+  free(a_float);
+  free(b_float);
+  free(out);
+
+  return result;
 }
 
 Array* add_scalar_array(Array* a, float b) {
@@ -68,21 +97,49 @@ Array* add_broadcasted_array(Array* a, Array* b) {
 }
 
 Array* sub_array(Array* a, Array* b) {
-  if (a == NULL) {
+  if (a == NULL || b == NULL) {
     fprintf(stderr, "Array value pointers are null!\n");
     exit(EXIT_FAILURE);
   }
   if (a->ndim != b->ndim) {
-    fprintf(stderr, "arrays must have the same no of dims %d and %d for subtraction\n", a->ndim, b->ndim);
-    exit(1);
+    fprintf(stderr, "arrays must have the same no of dims %d and %d for addition\n", a->ndim, b->ndim);
+    exit(EXIT_FAILURE);
   }
+
+  // checking if shapes match
+  for (size_t i = 0; i < a->ndim; i++) {
+    if (a->shape[i] != b->shape[i]) {
+      fprintf(stderr, "arrays must have the same shape for addition\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  // convering both arrays to float32 for computation
+  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
+  float* b_float = convert_to_float32(b->data, b->dtype, b->size);
+
+  if (a_float == NULL || b_float == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    if (b_float) free(b_float);
+    exit(EXIT_FAILURE);
+  }
+
   float* out = (float*)malloc(a->size * sizeof(float));
   if (out == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
-    exit(1);
+    free(a_float);
+    free(b_float);
+    exit(EXIT_FAILURE);
   }
-  sub_ops(a->data, b->data, out, a->size);
-  return create_array(out, a->ndim, a->shape, a->size);
+  sub_ops(a_float, b_float, out, a->size);  // Perform the addition operation
+  dtype_t result_dtype = promote_dtypes(a->dtype, b->dtype);  // determining result dtype
+  Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
+  free(a_float);
+  free(b_float);
+  free(out);
+
+  return result;
 }
 
 Array* sub_scalar_array(Array* a, float b) {
