@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "red_ops.h"
 
-void max_array(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim) {
+void max_array_ops(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim) {
   if (axis == -1) {
     // global min - find minimum of all elements
     float min_val = a[0];  // initialize with first element instead of INFINITY
@@ -54,8 +54,7 @@ void max_array(float* a, float* out, size_t size, int* shape, int* strides, int*
   }
 }
 
-
-void min_array(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim) {
+void min_array_ops(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim) {
   if (axis == -1) {
     // global min - find minimum of all elements
     float min_val = a[0];  // initialize with first element instead of INFINITY
@@ -105,7 +104,7 @@ void min_array(float* a, float* out, size_t size, int* shape, int* strides, int*
   }
 }
 
-void sum_array(float* a, float* out, int* shape, int* strides, int size, int* res_shape, int axis, int ndim) {
+void sum_array_ops(float* a, float* out, int* shape, int* strides, int size, int* res_shape, int axis, int ndim) {
   if (axis == -1) {
     // global sum - sum all elements
     float sum = 0.0;
@@ -154,7 +153,7 @@ void sum_array(float* a, float* out, int* shape, int* strides, int size, int* re
   }
 }
 
-void mean_array(float* a, float* out, int* shape, int* strides, int size, int* res_shape, int axis, int ndim) {
+void mean_array_ops(float* a, float* out, int* shape, int* strides, int size, int* res_shape, int axis, int ndim) {
   if (axis == -1) {
     float sum = 0.0;
     for (int i = 0; i < size; i++) {
@@ -201,7 +200,7 @@ void mean_array(float* a, float* out, int* shape, int* strides, int size, int* r
   }
 }
 
-void var_array(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim, int ddof) {
+void var_array_ops(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim, int ddof) {
   if (axis == -1) {
     // global variance - calculate variance of all elements
     float mean = 0.0;   // first pass: calculate mean
@@ -310,7 +309,7 @@ void var_array(float* a, float* out, size_t size, int* shape, int* strides, int*
   }
 }
 
-void std_array(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim, int ddof) {
+void std_array_ops(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim, int ddof) {
   if (axis == -1) {
     // global standard deviation - calculate std of all elements
     float mean = 0.0; // first pass: calculate mean

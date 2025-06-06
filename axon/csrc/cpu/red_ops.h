@@ -9,12 +9,12 @@
 #include <stdlib.h>
 
 extern "C" {
-  void sum_array(float* a, float* out, int* shape, int* strides, int size, int* res_shape, int axis, int ndim);
-  void mean_array(float* a, float* out, int* shape, int* strides, int size, int* res_shape, int axis, int ndim);
-  void max_array(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim);
-  void min_array(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim);
-  void var_array(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim, int ddof);
-  void std_array(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim, int ddof);
+  void sum_array_ops(float* a, float* out, int* shape, int* strides, int size, int* res_shape, int axis, int ndim);
+  void mean_array_ops(float* a, float* out, int* shape, int* strides, int size, int* res_shape, int axis, int ndim);
+  void max_array_ops(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim);
+  void min_array_ops(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim);
+  void var_array_ops(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim, int ddof);
+  void std_array_ops(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim, int ddof);
 }
 
 #endif  //!__RED_OPS__H__
