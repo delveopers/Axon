@@ -35,8 +35,10 @@ def find_source_files():
 
   required_files = [
     csrc_dir / "core/core.cpp",
+    csrc_dir / "core/dtype.cpp",
     csrc_dir / "array.cpp",
     csrc_dir / "cpu/maths_ops.cpp",
+    csrc_dir / "cpu/red_ops.cpp",
     csrc_dir / "cpu/helpers.cpp",
     csrc_dir / "cpu/utils.cpp"
   ]
@@ -67,7 +69,7 @@ def build_library():
     print("Error: Could not find required C++ source files!")
     print("Expected files:")
     print("axon/csrc/")
-    print("  - core.cpp, array.cpp, maths_ops.cpp")
+    print("  - core/core.cpp, core/dtype.cpp, array.cpp, cpu/maths_ops.cpp, cpu/helpers.cpp, cpu/red_ops.cpp, cpu/utils.cpp")
     print("  (or similar structure in csrc/ or src/)")
     return False
 
