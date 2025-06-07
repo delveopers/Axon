@@ -14,6 +14,8 @@ extern "C" {
   void div_scalar_ops(float* a, float b, float* out, size_t size);
   void pow_array_ops(float* a, float exp, float* out, size_t size);
   void pow_scalar_ops(float a, float* exp, float* out, size_t size);
+  void exp_array_ops(float* a, float* out, size_t size);
+  void log_array_ops(float* a, float* out, size_t size);
 
   void sin_ops(float* a, float* out, size_t size);
   void cos_ops(float* a, float* out, size_t size);

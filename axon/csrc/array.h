@@ -1,11 +1,13 @@
 /**
   @file array.h header file for array.cpp & array
   * contains all the array related ops
-  * imports basic core & basic functionalities from core.h
+  * imports basic core & basic functionalities from core/core.h
+  * cpu based helper codes from cpu/
+  * cuda based codes from cuda/
   * compile it as:
-    *- '.so': g++ -shared -fPIC -o libarray.so core.cpp array.cpp maths_ops.cpp
-    *- '.dll': g++ -shared -o libarray.dll core.cpp array.cpp maths_ops.cpp
-    *- '.dylib': g++ -dynamiclib -o libarray.dylib core.cpp array.cpp maths_ops.cpp
+    *- '.so': g++ -shared -fPIC -o libarray.so core/core.cpp core/dtype.cpp array.cpp cpu/maths_ops.cpp cpu/helpers.cpp cpu/utils.cpp cpu/red_ops.cpp
+    *- '.dll': g++ -shared -o libarray.dll core/core.cpp core/dtype.cpp array.cpp cpu/maths_ops.cpp cpu/helpers.cpp cpu/utils.cpp cpu/red_ops.cpp
+    *- '.dylib': g++ -dynamiclib -o libarray.dylib core/core.cpp core/dtype.cpp array.cpp cpu/maths_ops.cpp cpu/helpers.cpp cpu/utils.cpp cpu/red_ops.cpp
 */
 
 #ifndef __ARRAY__H__
@@ -15,7 +17,7 @@
 #include "core/core.h"
 
 extern "C" {
-  // array ops
+  // binary ops
   Array* add_array(Array* a, Array* b);
   Array* add_scalar_array(Array* a, float b);
   Array* add_broadcasted_array(Array* a, Array* b);
@@ -28,6 +30,8 @@ extern "C" {
   Array* div_array(Array* a, Array* b);
   Array* div_scalar_array(Array* a, float b);
   Array* div_broadcasted_array(Array* a, Array* b);
+
+  // unary ops
   Array* sin_array(Array* a);
   Array* sinh_array(Array* a);
   Array* cos_array(Array* a);
@@ -36,9 +40,22 @@ extern "C" {
   Array* tanh_array(Array* a);
   Array* pow_array(Array* a, float exp);
   Array* pow_scalar(float a, Array* exp);
+
+  // shaping ops
   Array* transpose_array(Array* a);
   Array* equal_array(Array* a, Array* b);
   Array* reshape_array(Array* a, int* new_shape, int new_ndim);
+  Array* squeeze_array(Array* a, int axis);
+  Array* expand_dims_array(Array* a, int axis);
+  Array* flatten_array(Array* a);
+
+  // reduction ops
+  Array* sum_array(Array* a, int axis, bool keepdims);
+  Array* mean_array(Array* a, int axis, bool keepdims);
+  Array* max_array(Array* a, int axis, bool keepdims);
+  Array* min_array(Array* a, int axis, bool keepdims);
+  Array* var_array(Array* a, int axis, int ddof);
+  Array* std_array(Array* a, int axis, int ddof);
 }
 
 #endif  //!__ARRAY__H__
