@@ -5,9 +5,9 @@
   * cpu based helper codes from cpu/
   * cuda based codes from cuda/
   * compile it as:
-    *- '.so': g++ -shared -fPIC -o libarray.so core/core.cpp core/dtype.cpp array.cpp cpu/maths_ops.cpp cpu/helpers.cpp cpu/utils.cpp cpu/red_ops.cpp
-    *- '.dll': g++ -shared -o libarray.dll core/core.cpp core/dtype.cpp array.cpp cpu/maths_ops.cpp cpu/helpers.cpp cpu/utils.cpp cpu/red_ops.cpp
-    *- '.dylib': g++ -dynamiclib -o libarray.dylib core/core.cpp core/dtype.cpp array.cpp cpu/maths_ops.cpp cpu/helpers.cpp cpu/utils.cpp cpu/red_ops.cpp
+    *- '.so': g++ -shared -fPIC -o libarray.so core/core.cpp core/dtype.cpp array.cpp cpu/maths_ops.cpp cpu/helpers.cpp cpu/utils.cpp cpu/red_ops.cpp cpu/binary_ops.cpp
+    *- '.dll': g++ -shared -o libarray.dll core/core.cpp core/dtype.cpp array.cpp cpu/maths_ops.cpp cpu/helpers.cpp cpu/utils.cpp cpu/red_ops.cpp cpu/binary_ops.cpp
+    *- '.dylib': g++ -dynamiclib -o libarray.dylib core/core.cpp core/dtype.cpp array.cpp cpu/maths_ops.cpp cpu/helpers.cpp cpu/utils.cpp cpu/red_ops.cpp cpu/binary_ops.cpp
 */
 
 #ifndef __ARRAY__H__
@@ -30,6 +30,9 @@ extern "C" {
   Array* div_array(Array* a, Array* b);
   Array* div_scalar_array(Array* a, float b);
   Array* div_broadcasted_array(Array* a, Array* b);
+  Array* matmul_array(Array* a, Array* b);
+  Array* batch_matmul_array(Array* a, Array* b);
+  Array* broadcasted_matmul_array(Array* a, Array* b);
 
   // unary ops
   Array* sin_array(Array* a);
