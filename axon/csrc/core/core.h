@@ -4,9 +4,9 @@
   * entry point to all the array functions
   * includes only basic core functionalities, ops are on different file
   * compile it as:
-    *- '.so': g++ -shared -fPIC -o libarray.so core/core.cpp core/dtype.cpp array.cpp cpu/maths_ops.cpp cpu/helpers.cpp cpu/utils.cpp
-    *- '.dll': g++ -shared -o libarray.dll core/core.cpp core/dtype.cpp array.cpp cpu/maths_ops.cpp cpu/helpers.cpp cpu/utils.cpp
-    *- 'dylib': g++ -dynamiclib -o libarray.dylib core/core.cpp core/dtype.cpp array.cpp cpu/maths_ops.cpp cpu/helpers.cpp cpu/utils.cpp
+    *- '.so': g++ -shared -fPIC -o libarray.so core/core.cpp core/dtype.cpp array.cpp cpu/maths_ops.cpp cpu/helpers.cpp cpu/utils.cpp cpu/red_ops.cpp cpu/binary_ops.cpp
+    *- '.dll': g++ -shared -o libarray.dll core/core.cpp core/dtype.cpp array.cpp cpu/maths_ops.cpp cpu/helpers.cpp cpu/utils.cpp cpu/red_ops.cpp cpu/binary_ops.cpp
+    *- '.dylib': g++ -dynamiclib -o libarray.dylib core/core.cpp core/dtype.cpp array.cpp cpu/maths_ops.cpp cpu/helpers.cpp cpu/utils.cpp cpu/red_ops.cpp cpu/binary_ops.cpp
 */
 
 #ifndef __CORE__H__
@@ -34,6 +34,10 @@ extern "C" {
   void delete_data(Array* self);
   void delete_strides(Array* self);
   void print_array(Array* self);
+  float* out_data(Array* self);
+  int* out_shape(Array* self);
+  int* out_strides(Array* self);
+  int out_size(Array* self);
 
   // dtype casting management functions
   Array* cast_array(Array* self, dtype_t new_dtype);

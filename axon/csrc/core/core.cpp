@@ -140,6 +140,27 @@ void delete_strides(Array* self) {
   }
 }
 
+float* out_data(Array* self) {
+  if (self == NULL) return NULL;
+  float* temp_float = convert_to_float32(self->data, self->dtype, self->size);
+  return temp_float;
+}
+
+int* out_shape(Array* self) {
+  if (self == NULL) return NULL;
+  return self->shape;
+}
+
+int* out_strides(Array* self) {
+  if (self == NULL) return NULL;
+  return self->strides;
+}
+
+int out_size(Array* self) {
+  if (self == NULL) return NULL;
+  return self->size;
+}
+
 // helper function to format element based on dtype
 void format_element_by_dtype(void* data, dtype_t dtype, size_t index, char* buffer) {
   switch (dtype) {
