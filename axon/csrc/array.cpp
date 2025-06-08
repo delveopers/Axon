@@ -1167,55 +1167,63 @@ Array* transpose_array(Array* a) {
     fprintf(stderr, "Array value pointers are null!\n");
     exit(EXIT_FAILURE);
   }  
+  
   int ndim = a->ndim;
-  int* shape = (int*)malloc(ndim * sizeof(int));
-  if (shape == NULL) {
+  int* result_shape = (int*)malloc(ndim * sizeof(int));
+  if (result_shape == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
     exit(EXIT_FAILURE);
   }
 
-  // reversing the shape for transpose
+  // creating the result shape (reversed dimensions)
   for (int i = 0; i < ndim; i++) {
-    shape[i] = a->shape[ndim - 1 - i];
+    result_shape[i] = a->shape[ndim - 1 - i];
   }
+  
   // converting array to float32 for computation
   float* a_float = convert_to_float32(a->data, a->dtype, a->size);
   if (a_float == NULL) {
     fprintf(stderr, "Memory allocation failed during dtype conversion\n");
-    free(shape);
+    free(result_shape);
     exit(EXIT_FAILURE);
   }  
+  
   float* out = (float*)malloc(a->size * sizeof(float));
   if (out == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
     free(a_float);
-    free(shape);
+    free(result_shape);
     exit(EXIT_FAILURE);
   }
 
   // performing transpose based on dimensions
+  // IMPORTANT: passing the ORIGINAL shape to transpose functions, not the result shape
   switch(ndim) {
     case 1:
-      transpose_1d_array_ops(a_float, out, shape);
+      transpose_1d_array_ops(a_float, out, a->shape);  // using original shape
       break;
     case 2:
-      transpose_2d_array_ops(a_float, out, shape);
+      transpose_2d_array_ops(a_float, out, a->shape);  // using original shape
       break;
     case 3:
-      transpose_3d_array_ops(a_float, out, shape);
+      transpose_3d_array_ops(a_float, out, a->shape);  // using original shape
       break;
     default:
+    if (ndim > 3) {
+      transpose_ndim_array_ops(a_float, out, a->shape, a->ndim);
+    } else {
       fprintf(stderr, "Transpose supported only for 1-3 dimensional arrays\n");
       free(a_float);
       free(out);
-      free(shape);
+      free(result_shape);
       exit(EXIT_FAILURE);
+    }
   }
-  dtype_t result_dtype = a->dtype;  // Transpose preserves the original dtype
-  Array* result = create_array(out, ndim, shape, a->size, result_dtype);
+  dtype_t result_dtype = a->dtype;
+  Array* result = create_array(out, ndim, result_shape, a->size, result_dtype);
   free(a_float);
   free(out);
-  free(shape);
+  free(result_shape);
   return result;
 }
 

@@ -9,6 +9,7 @@ extern "C" {
   void transpose_1d_array_ops(float* a, float* out, int* shape);
   void transpose_2d_array_ops(float* a, float* out, int* shape);
   void transpose_3d_array_ops(float* a, float* out, int* shape);
+  void transpose_ndim_array_ops(float* a, float* out, int* shape, int ndim);
 }
 
 #endif

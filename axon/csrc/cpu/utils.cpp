@@ -18,18 +18,66 @@ void transpose_2d_array_ops(float* a, float* out, int* shape) {
   int rows = shape[0], cols = shape[1];
   for (int i = 0; i < rows; i++) {
     for (int j = 0; j < cols; j++) {
+      // Transpose: out[j][i] = a[i][j]
+      // out is cols x rows, so out[j][i] = out[j * rows + i]
+      // a is rows x cols, so a[i][j] = a[i * cols + j]
       out[j * rows + i] = a[i * cols + j];
     }
   }
 }
 
 void transpose_3d_array_ops(float* a, float* out, int* shape) {
-  int batch = shape[0], rows = shape[1], cols = shape[2];
-  for (int i = 0; i < batch; i++) {
-    for (int j = 0; j < rows; j++) {
-      for (int k = 0; k < cols; k++) {
-        out[k * rows * cols + j * batch + i] = a[i * rows * cols + cols * j + k];
+  int dim0 = shape[0], dim1 = shape[1], dim2 = shape[2];
+  
+  // For 3D transpose, we reverse all dimensions: (d0, d1, d2) -> (d2, d1, d0)
+  for (int i = 0; i < dim0; i++) {
+    for (int j = 0; j < dim1; j++) {
+      for (int k = 0; k < dim2; k++) {
+        // Original: a[i][j][k] = a[i * dim1 * dim2 + j * dim2 + k]
+        // Transposed: out[k][j][i] = out[k * dim1 * dim0 + j * dim0 + i]
+        out[k * dim1 * dim0 + j * dim0 + i] = a[i * dim1 * dim2 + j * dim2 + k];
       }
     }
+  }
+}
+
+void transpose_ndim_array_ops(float* a, float* out, int* shape, int ndim) {
+  // calculating total size for verification
+  size_t total_size = 1;
+  for (int i = 0; i < ndim; i++) {
+    total_size *= shape[i];
+  }
+  // create transposed shape for coordinate calculations
+  int transposed_shape[ndim];
+  for (int i = 0; i < ndim; i++) {
+    transposed_shape[i] = shape[ndim - 1 - i];
+  }
+
+  // for each element in the output array
+  for (size_t out_idx = 0; out_idx < total_size; out_idx++) {
+    // converting flat output index to multi-dimensional coordinates
+    size_t temp = out_idx;
+    int out_coords[ndim];
+    
+    // calculating coordinates in transposed space using transposed_shape
+    for (int i = ndim - 1; i >= 0; i--) {
+      out_coords[i] = temp % transposed_shape[i];
+      temp /= transposed_shape[i];
+    }
+
+    // converting to input coordinates (reverse the coordinate order)
+    int in_coords[ndim];
+    for (int i = 0; i < ndim; i++) {
+      in_coords[i] = out_coords[ndim - 1 - i];
+    }
+
+    // calculating input flat index from coordinates using original shape
+    size_t in_idx = 0;
+    size_t multiplier = 1;
+    for (int i = ndim - 1; i >= 0; i--) {
+      in_idx += in_coords[i] * multiplier;
+      multiplier *= shape[i];
+    }
+    out[out_idx] = a[in_idx];     // copying the element
   }
 }
