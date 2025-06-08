@@ -141,23 +141,35 @@ void delete_strides(Array* self) {
 }
 
 float* out_data(Array* self) {
-  if (self == NULL) return NULL;
+  if (self == NULL) {
+    fprintf(stderr, "Invalid input parameters!\n");
+    exit(EXIT_FAILURE);
+  }
   float* temp_float = convert_to_float32(self->data, self->dtype, self->size);
   return temp_float;
 }
 
 int* out_shape(Array* self) {
-  if (self == NULL) return NULL;
+  if (self == NULL) {
+    fprintf(stderr, "Invalid input parameters!\n");
+    exit(EXIT_FAILURE);
+  }
   return self->shape;
 }
 
 int* out_strides(Array* self) {
-  if (self == NULL) return NULL;
+  if (self == NULL) {
+    fprintf(stderr, "Invalid input parameters!\n");
+    exit(EXIT_FAILURE);
+  }
   return self->strides;
 }
 
 int out_size(Array* self) {
-  if (self == NULL) return NULL;
+  if (self == NULL) {
+    fprintf(stderr, "Invalid input parameters!\n");
+    exit(EXIT_FAILURE);
+  }
   return self->size;
 }
 
