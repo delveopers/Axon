@@ -40,6 +40,9 @@ extern "C" {
   Array* tanh_array(Array* a);
   Array* pow_array(Array* a, float exp);
   Array* pow_scalar(float a, Array* exp);
+  Array* log_array(Array* a);
+  Array* exp_array(Array* a);
+  Array* abs_array(Array* a);
 
   // shaping ops
   Array* transpose_array(Array* a);
