@@ -2,7 +2,7 @@ from ctypes import c_float, c_size_t, c_int
 from typing import *
 
 from ._cbase import CArray, lib, DType
-from .helpers.shape import get_shape, flatten, get_strides, transposed_shape
+from .helpers.shape import get_shape, flatten, get_strides, transposed_shape, reshape_list
 
 int8, int16, int32, int64, long = "int8", "int16", "int32", "int64", "long"
 float32, float64, double = "float32", "float64", "double"
@@ -306,20 +306,27 @@ class array:
     out.dtype = self.dtype
     return out
 
-  def __rpow__(self, exp) -> "array":
+  def __rpow__(self, base) -> "array":
     """
     Right-hand power to support scalar ** array.
 
     Parameters:
     -----------
-    other : int or float
+    base : int or float
         Base value for exponentiation.
 
     Returns:
     --------
     array : Result of reversed exponentiation.
     """
-    raise NotImplementedError("__rpow__ function not implemented yet")
+    if isinstance(base, (int, float)):
+      result_ptr = lib.pow_scalar(c_float(base), self.data).contents
+      out = array(result_ptr)
+      out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
+      out.dtype = self.dtype
+      return out
+    else:
+      raise NotImplementedError("__rpow__ with array base not implemented yet")
 
   def __eq__(self, other) -> "array":
     """Element-wise equality comparison"""
@@ -334,6 +341,170 @@ class array:
     out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
     out.dtype = DType.BOOL
     return out
+
+  def log(self) -> "array":
+    """
+    Compute the natural logarithm of the array.
+
+    Returns:
+    --------
+    array : Array with natural logarithm of each element.
+    """
+    result_ptr = lib.log_array(self.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
+    out.dtype = self.dtype
+    return out
+
+  def exp(self) -> "array":
+    """
+    Compute the exponential of the array.
+
+    Returns:
+    --------
+    array : Array with exponential of each element.
+    """
+    result_ptr = lib.exp_array(self.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
+    out.dtype = self.dtype
+    return out
+
+  def abs(self) -> "array":
+    """
+    Compute the absolute value of the array.
+
+    Returns:
+    --------
+    array : Array with absolute value of each element.
+    """
+    result_ptr = lib.abs_array(self.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
+    out.dtype = self.dtype
+    return out
+
+  def _matmul(self, other) -> "array":
+    """
+    Matrix multiplication that automatically handles 2D, 3D, and N-D arrays.
+    
+    Parameters:
+    -----------
+    other : array
+        Right-hand operand for matrix multiplication.
+    
+    Returns:
+    --------
+    array : Result of matrix multiplication.
+    """
+    other = other if isinstance(other, (CArray, array)) else array(other)
+
+    # determining which matmul function to use based on dimensions
+    if self.ndim <= 2 and other.ndim <= 2:
+      # standard 2D matrix multiplication
+      result_ptr = lib.matmul_array(self.data, other.data).contents
+      
+      # calculating output shape for 2D matmul
+      if self.ndim == 2 and other.ndim == 2:
+        out_shape = (self.shape[0], other.shape[1])
+      elif self.ndim == 1 and other.ndim == 2:
+        out_shape = (other.shape[1],)
+      elif self.ndim == 2 and other.ndim == 1:
+        out_shape = (self.shape[0],)
+      else:  # both 1D
+        out_shape = ()
+        
+    elif self.ndim == 3 and other.ndim == 3 and self.shape[0] == other.shape[0]:
+      # batch matrix multiplication (same batch size)
+      result_ptr = lib.batch_matmul_array(self.data, other.data).contents
+      batch_size = self.shape[0]
+      out_shape = (batch_size, self.shape[1], other.shape[2])
+      
+    else:
+      # broadcasted matrix multiplication for higher dimensions or different batch sizes
+      result_ptr = lib.broadcasted_matmul_array(self.data, other.data).contents
+
+      # calculating broadcasted output shape
+      # get batch dimensions (all except last 2)
+      self_batch = self.shape[:-2] if self.ndim > 2 else ()
+      other_batch = other.shape[:-2] if other.ndim > 2 else ()
+      
+      # broadcasting batch dimensions
+      max_batch_ndim = max(len(self_batch), len(other_batch))
+      broadcasted_batch = []
+      
+      for i in range(max_batch_ndim):
+        self_dim = self_batch[-(i+1)] if i < len(self_batch) else 1
+        other_dim = other_batch[-(i+1)] if i < len(other_batch) else 1
+        
+        if self_dim == 1:
+          broadcasted_batch.append(other_dim)
+        elif other_dim == 1:
+          broadcasted_batch.append(self_dim)
+        elif self_dim == other_dim:
+          broadcasted_batch.append(self_dim)
+        else:
+          raise ValueError(f"Cannot broadcast batch dimensions {self_batch} and {other_batch}")
+      broadcasted_batch.reverse()
+
+      # get matrix dimensions
+      self_rows = self.shape[-2] if self.ndim >= 2 else 1
+      self_cols = self.shape[-1]
+      other_rows = other.shape[-2] if other.ndim >= 2 else other.shape[-1]
+      other_cols = other.shape[-1] if other.ndim >= 2 else 1
+      
+      # calculating final matrix dimensions
+      if self.ndim >= 2 and other.ndim >= 2:
+        matrix_shape = (self_rows, other_cols)
+      elif self.ndim == 1 and other.ndim >= 2:
+        matrix_shape = (other_cols,)
+      elif self.ndim >= 2 and other.ndim == 1:
+        matrix_shape = (self_rows,)
+      else:  # both 1D
+        matrix_shape = ()
+
+      out_shape = tuple(broadcasted_batch) + matrix_shape
+
+    # creating output array
+    out = array(result_ptr)
+    out.shape, out.size = out_shape, 1
+    for dim in out_shape:
+      out.size *= dim
+    out.ndim, out.strides, out.dtype = len(out_shape), get_strides(out_shape), self.dtype
+    return out
+
+  def __matmul__(self, other) -> "array":
+    """
+    Matrix multiplication operator (@).
+    
+    Parameters:
+    -----------
+    other : array
+        Right-hand operand for matrix multiplication.
+    
+    Returns:
+    --------
+    array : Result of matrix multiplication.
+    """
+    return self._matmul(other)
+
+  def to_list(self) -> List[Any]:
+    """
+    Convert array to Python list.
+
+    Returns:
+    --------
+    list : Python list representation of the array.
+    """
+    data_ptr = lib.out_data(self.data)
+    data_array = [data_ptr[i] for i in range(self.size)]
+
+    if self.ndim == 0:
+      return data_array[0]
+    elif self.ndim == 1:
+      return data_array
+    else:
+      return reshape_list(data_array, self.shape)
 
   def sin(self) -> "array":
     """
