@@ -62,6 +62,14 @@ lib.delete_strides.argtypes = [POINTER(CArray)]
 lib.delete_strides.restype = None
 lib.print_array.argtypes = [POINTER(CArray)]
 lib.print_array.restype = None
+lib.out_data.argtypes = [POINTER(CArray)]
+lib.out_data.restype = POINTER(c_float)
+lib.out_shape.argtypes = [POINTER(CArray)]
+lib.out_shape.restype = POINTER(c_int)
+lib.out_strides.argtypes = [POINTER(CArray)]
+lib.out_strides.restype = POINTER(c_int)
+lib.out_size.argtypes = [POINTER(CArray)]
+lib.out_size.restype = c_int
 
 # dtype casting functions
 lib.cast_array.argtypes = [POINTER(CArray), c_int]
@@ -136,6 +144,18 @@ lib.pow_array.argtypes = [POINTER(CArray), c_float]
 lib.pow_array.restype = POINTER(CArray)
 lib.pow_scalar.argtypes = [c_float, POINTER(CArray)]
 lib.pow_scalar.restype = POINTER(CArray)
+lib.log_array.argtypes = [POINTER(CArray)]
+lib.log_array.restype = POINTER(CArray)
+lib.exp_array.argtypes = [POINTER(CArray)]
+lib.exp_array.restype = POINTER(CArray)
+lib.abs_array.argtypes = [POINTER(CArray)]
+lib.abs_array.restype = POINTER(CArray)
+lib.matmul_array.argtypes = [POINTER(CArray), POINTER(CArray)]
+lib.matmul_array.restype = POINTER(CArray)
+lib.batch_matmul_array.argtypes = [POINTER(CArray), POINTER(CArray)]
+lib.batch_matmul_array.restype = POINTER(CArray)
+lib.broadcasted_matmul_array.argtypes = [POINTER(CArray), POINTER(CArray)]
+lib.broadcasted_matmul_array.restype = POINTER(CArray)
 
 lib.sin_array.argtypes = [POINTER(CArray)]
 lib.sin_array.restype = POINTER(CArray)

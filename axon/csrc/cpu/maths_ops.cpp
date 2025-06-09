@@ -77,6 +77,10 @@ void log_array_ops(float* a, float* out, size_t size) {
   for (size_t i = 0; i < size; i++) { out[i] = logf(a[i]); }
 }
 
+void abs_array_ops(float* a, float* out, size_t size) {
+  for (size_t i = 0; i < size; i++) { out[i] = fabsf(a[i]); }
+}
+
 void sin_ops(float* a, float* out, size_t size) {
   for (size_t i = 0; i < size; i++) { out[i] = sinf(a[i]); }
 }

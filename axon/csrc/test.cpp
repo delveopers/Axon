@@ -1,5 +1,5 @@
 // compile with:
-// g++ -o run test.cpp array.cpp core/core.cpp core/dtype.cpp cpu/maths_ops.cpp cpu/utils.cpp cpu/helpers.cpp
+// *- g++ -o run test.cpp array.cpp core/core.cpp core/dtype.cpp cpu/maths_ops.cpp cpu/utils.cpp cpu/helpers.cpp cpu/red_ops.cpp
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,8 +20,8 @@ int main() {
     data2[i] = (i + 1) * 2;
   }
 
-  Array* a = create_array(data1, ndim, shape, size, DTYPE_FLOAT32);
-  Array* b = create_array(data2, ndim, shape, size, DTYPE_FLOAT32);
+  Array* a = create_array(data1, ndim, shape, size, DTYPE_INT8);
+  Array* b = create_array(data2, ndim, shape, size, DTYPE_INT8);
 
   // Print original arrays
   printf("Original Arrays:\n");
@@ -52,8 +52,8 @@ int main() {
   print_array(s);
 
   // Create random arrays
-  Array* r1 = randn_array(shape, size, ndim, DTYPE_FLOAT32);
-  Array* r2 = randint_array(-5, 5, shape, size, ndim, DTYPE_INT32);
+  Array* r1 = randn_array(shape, size, ndim, DTYPE_FLOAT64);
+  Array* r2 = randint_array(-5, 5, shape, size, ndim, DTYPE_INT16);
   printf("\nRandom Normal:\n");
   print_array(r1);
   printf("\nRandom Integers (-5 to 5):\n");

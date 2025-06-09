@@ -34,3 +34,16 @@ def transposed_shape(shape):
     return [batch, cols, rows]
   else:
     raise ValueError(f"Unsupported shape dimension: {ndim}")
+
+def reshape_list(flat_list, shape):
+  if len(shape) == 1:
+    return flat_list[:shape[0]]
+
+  size = shape[0]
+  stride = len(flat_list) // size
+  result = []
+  for i in range(size):
+    start = i * stride
+    end = start + stride
+    result.append(reshape_list(flat_list[start:end], shape[1:]))
+  return result
