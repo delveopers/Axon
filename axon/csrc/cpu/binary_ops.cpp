@@ -5,7 +5,7 @@
 
 // standard 2D matrix multiplication: C = A @ B
 // A: shape1[0] x shape1[1], B: shape1[1] x shape2[1], C: shape1[0] x shape2[1]
-void matmul_array_ops(float* a, float* b, float* out, size_t size, int* shape1, int* shape2) {
+void matmul_array_ops(float* a, float* b, float* out, int* shape1, int* shape2) {
   for (int i = 0; i < shape1[0]; i++) {
     for (int j = 0; j < shape2[1]; j++) {
       float sum = 0.0f;
@@ -17,10 +17,22 @@ void matmul_array_ops(float* a, float* b, float* out, size_t size, int* shape1, 
   }
 }
 
+void matmul_t_array_ops(float* a, float* b, float* out, size_t size) {
+  for (int i = 0; i < size; ++i) {
+    for (int j = 0; j < size; ++j) {
+      float sum = 0.0f;
+      for (int k = 0; k < size; ++k) {
+        sum += a[i * size + k] * b[j * size + k];
+      }
+      out[i * size + j] = sum;
+    }
+  }
+}
+
 // batch matrix multiplication: batched A @ batched B
 // A: shape1[0] x shape1[1] x shape1[2], B: shape2[0] x shape2[1] x shape2[2]
 // output: shape1[0] x shape1[1] x shape2[2] (assuming shape1[0] == shape2[0])
-void batch_matmul_array_ops(float* a, float* b, float* out, size_t size, int* shape1, int* shape2, int* strides1, int* strides2) {
+void batch_matmul_array_ops(float* a, float* b, float* out, int* shape1, int* shape2, int* strides1, int* strides2) {
   int batch_size = shape1[0];
   int out_stride = shape1[1] * shape2[2];
   
@@ -42,7 +54,7 @@ void batch_matmul_array_ops(float* a, float* b, float* out, size_t size, int* sh
 // broadcasted matrix multiplication: single A * batched B
 // A: shape1[0] x shape1[1], B: shape2[0] x shape2[1] x shape2[2]
 // output: shape2[0] x shape1[0] x shape2[2]
-void broadcasted_matmul_array_ops(float* a, float* b, float* out, size_t size, int* shape1, int* shape2, int* strides1, int* strides2) {
+void broadcasted_matmul_array_ops(float* a, float* b, float* out, int* shape1, int* shape2, int* strides1, int* strides2) {
   int out_stride = shape1[0] * shape2[2];
   
   for (int batch = 0; batch < shape2[0]; batch++) {
