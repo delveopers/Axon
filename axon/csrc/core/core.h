@@ -39,10 +39,24 @@ extern "C" {
   int* out_strides(Array* self);
   int out_size(Array* self);
 
+  // contiguous array ops
+  int is_contiguous_array(Array* self);
+  Array* contiguous_array(Array* self); // making array contiguous - returns new contiguous array
+  void make_contiguous_inplace_array(Array* self);
+  
+  // view operations
+  Array* view_array(Array* self);
+  Array* reshape_view(Array* self, int* new_shape, size_t new_ndim);
+  Array* slice_view(Array* self, int* start, int* end, int* step);
+
   // dtype casting management functions
   Array* cast_array(Array* self, dtype_t new_dtype);
   Array* cast_array_simple(Array* self, dtype_t new_dtype);
-  
+
+  // utility functions
+  int is_view_array(Array* self);
+  Array* copy_array(Array* self);
+
   // array creation functions with dtype support
   Array* zeros_like_array(Array* a);
   Array* zeros_array(int* shape, size_t size, size_t ndim, dtype_t dtype);
