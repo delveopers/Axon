@@ -536,7 +536,6 @@ Array* matmul_array(Array* a, Array* b) {
   // converting both arrays to float32 for computation
   float* a_float = convert_to_float32(a->data, a->dtype, a->size);
   float* b_float = convert_to_float32(b->data, b->dtype, b->size);
-
   if (a_float == NULL || b_float == NULL) {
     fprintf(stderr, "Memory allocation failed during dtype conversion\n");
     if (a_float) free(a_float);
@@ -544,8 +543,7 @@ Array* matmul_array(Array* a, Array* b) {
     exit(EXIT_FAILURE);
   }
 
-  // result shape: [a->shape[0], b->shape[1]]
-  int* result_shape = (int*)malloc(2 * sizeof(int));
+  int* result_shape = (int*)malloc(2 * sizeof(int));    // result shape: [a->shape[0], b->shape[1]]
   if (result_shape == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
     free(a_float);
@@ -553,7 +551,7 @@ Array* matmul_array(Array* a, Array* b) {
     exit(EXIT_FAILURE);
   }
   result_shape[0] = a->shape[0];
-  result_shape[1] = b->shape[1];
+  result_shape[1] = b->shape[0];  // result is A rows × B rows (since we're doing A @ B^T)
   size_t result_size = result_shape[0] * result_shape[1];
 
   float* out = (float*)malloc(result_size * sizeof(float));
@@ -565,6 +563,7 @@ Array* matmul_array(Array* a, Array* b) {
     exit(EXIT_FAILURE);
   }
 
+  // performing optimized matrix multiplication (regular A @ B)
   matmul_array_ops(a_float, b_float, out, a->shape, b->shape);
   dtype_t result_dtype = promote_dtypes(a->dtype, b->dtype);
   Array* result = create_array(out, 2, result_shape, result_size, result_dtype);
@@ -574,68 +573,6 @@ Array* matmul_array(Array* a, Array* b) {
   free(result_shape);
   return result;
 }
-
-Array* matmul_t_array(Array* a, Array* b) {
-  if (a == NULL || b == NULL) {
-    fprintf(stderr, "Array value pointers are null!\n");
-    exit(EXIT_FAILURE);
-  }
-  if (a->ndim != 2 || b->ndim != 2) {
-    fprintf(stderr, "Both arrays must be 2D for matrix multiplication\n");
-    exit(EXIT_FAILURE);
-  }
-
-  size_t n = a->shape[0];
-  if (a->shape[1] != n || b->shape[0] != n || b->shape[1] != n) {
-    fprintf(stderr, "Both matrices must be square and of the same size: got A(%dx%d), B(%dx%d)\n",a->shape[0], a->shape[1], b->shape[0], b->shape[1]);
-    exit(EXIT_FAILURE);
-  }
-
-  // Convert both arrays to float32
-  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
-  float* b_float = convert_to_float32(b->data, b->dtype, b->size);
-  float* temp = convert_to_float32(b->data, b->dtype, b->size);
-  if (a_float == NULL || b_float == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
-    if (a_float) free(a_float);
-    if (b_float) free(b_float);
-    exit(EXIT_FAILURE);
-  }
-
-  // Allocate result array
-  int* result_shape = (int*)malloc(2 * sizeof(int));
-  if (result_shape == NULL) {
-    fprintf(stderr, "Memory allocation failed\n");
-    free(a_float);
-    free(b_float);
-    exit(EXIT_FAILURE);
-  }
-  result_shape[0] = n;
-  result_shape[1] = n;
-
-  size_t result_size = n * n;
-  float* out = (float*)malloc(result_size * sizeof(float));
-  if (out == NULL) {
-    fprintf(stderr, "Memory allocation failed\n");
-    free(a_float);
-    free(b_float);
-    free(result_shape);
-    exit(EXIT_FAILURE);
-  }
-
-  // Use optimized square matrix multiplication
-  transpose_2d_array_ops(temp, b_float, b->shape);
-  matmul_t_array_ops(a_float, b_float, out, n);
-  dtype_t result_dtype = promote_dtypes(a->dtype, b->dtype);
-  Array* result = create_array(out, 2, result_shape, result_size, result_dtype);
-
-  free(a_float);
-  free(b_float);
-  free(out);
-  free(result_shape);
-  return result;
-}
-
 
 Array* batch_matmul_array(Array* a, Array* b) {
   if (a == NULL || b == NULL) {
