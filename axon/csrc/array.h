@@ -31,7 +31,6 @@ extern "C" {
   Array* div_scalar_array(Array* a, float b);
   Array* div_broadcasted_array(Array* a, Array* b);
   Array* matmul_array(Array* a, Array* b);
-  Array* matmul_t_array(Array* a, Array* b);
   Array* batch_matmul_array(Array* a, Array* b);
   Array* broadcasted_matmul_array(Array* a, Array* b);
 

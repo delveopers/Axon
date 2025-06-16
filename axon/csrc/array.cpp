@@ -551,7 +551,7 @@ Array* matmul_array(Array* a, Array* b) {
     exit(EXIT_FAILURE);
   }
   result_shape[0] = a->shape[0];
-  result_shape[1] = b->shape[0];  // result is A rows × B rows (since we're doing A @ B^T)
+  result_shape[1] = b->shape[1];  // result is A rows × B rows (since we're doing A @ B^T)
   size_t result_size = result_shape[0] * result_shape[1];
 
   float* out = (float*)malloc(result_size * sizeof(float));
