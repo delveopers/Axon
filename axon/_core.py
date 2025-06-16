@@ -135,6 +135,66 @@ class array:
     out.dtype = new_dtype
     return out
 
+  def is_contiguous(self) -> bool:
+    """
+    Check if the array is contiguous in memory.
+
+    Returns:
+    --------
+    bool : True if array is contiguous, False otherwise.
+    """
+    return bool(lib.is_contiguous_array(self.data))
+
+  def contiguous(self) -> "array":
+    """
+    Return a contiguous copy of the array.
+
+    Returns:
+    --------
+    array : A new contiguous array with the same data.
+    """
+    result_ptr = lib.contiguous_array(self.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
+    out.dtype = self.dtype
+    return out
+
+  def make_contiguous(self) -> None:
+    """
+    Make the array contiguous in-place (modifies the current array).
+
+    Returns:
+    --------
+    None
+    """
+    lib.make_contiguous_inplace_array(self.data)
+    # updating strides since they may have changed
+    self.strides = get_strides(self.shape)
+
+  def view(self) -> "array":
+    """
+    Create a view of the array.
+
+    Returns:
+    --------
+    array : A view of the current array.
+    """
+    result_ptr = lib.view_array(self.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
+    out.dtype = self.dtype
+    return out
+
+  def is_view(self) -> bool:
+    """
+    Check if the array is a view of another array.
+
+    Returns:
+    --------
+    bool : True if array is a view, False otherwise.
+    """
+    return bool(lib.is_view_array(self.data))
+
   def __add__(self, other) -> "array":
     """
     Elementwise addition of self and another array or scalar.
@@ -386,8 +446,7 @@ class array:
 
   def _matmul(self, other) -> "array":
     """
-    Matrix multiplication that automatically handles 2D, 3D, and N-D arrays.
-    
+    Matrix multiplication with optimized shape handling.
     Parameters:
     -----------
     other : array
@@ -399,93 +458,28 @@ class array:
     """
     other = other if isinstance(other, (CArray, array)) else array(other)
 
-    # determining which matmul function to use based on dimensions
+    # using the appropriate C function based on dimensions
     if self.ndim <= 2 and other.ndim <= 2:
-      # standard 2D matrix multiplication
       result_ptr = lib.matmul_array(self.data, other.data).contents
-      
-      # calculating output shape for 2D matmul
-      if self.ndim == 2 and other.ndim == 2:
-        out_shape = (self.shape[0], other.shape[1])
-      elif self.ndim == 1 and other.ndim == 2:
-        out_shape = (other.shape[1],)
-      elif self.ndim == 2 and other.ndim == 1:
-        out_shape = (self.shape[0],)
-      else:  # both 1D
-        out_shape = ()
-        
     elif self.ndim == 3 and other.ndim == 3 and self.shape[0] == other.shape[0]:
-      # batch matrix multiplication (same batch size)
       result_ptr = lib.batch_matmul_array(self.data, other.data).contents
-      batch_size = self.shape[0]
-      out_shape = (batch_size, self.shape[1], other.shape[2])
-      
     else:
-      # broadcasted matrix multiplication for higher dimensions or different batch sizes
       result_ptr = lib.broadcasted_matmul_array(self.data, other.data).contents
 
-      # calculating broadcasted output shape
-      # get batch dimensions (all except last 2)
-      self_batch = self.shape[:-2] if self.ndim > 2 else ()
-      other_batch = other.shape[:-2] if other.ndim > 2 else ()
-      
-      # broadcasting batch dimensions
-      max_batch_ndim = max(len(self_batch), len(other_batch))
-      broadcasted_batch = []
-      
-      for i in range(max_batch_ndim):
-        self_dim = self_batch[-(i+1)] if i < len(self_batch) else 1
-        other_dim = other_batch[-(i+1)] if i < len(other_batch) else 1
-        
-        if self_dim == 1:
-          broadcasted_batch.append(other_dim)
-        elif other_dim == 1:
-          broadcasted_batch.append(self_dim)
-        elif self_dim == other_dim:
-          broadcasted_batch.append(self_dim)
-        else:
-          raise ValueError(f"Cannot broadcast batch dimensions {self_batch} and {other_batch}")
-      broadcasted_batch.reverse()
-
-      # get matrix dimensions
-      self_rows = self.shape[-2] if self.ndim >= 2 else 1
-      self_cols = self.shape[-1]
-      other_rows = other.shape[-2] if other.ndim >= 2 else other.shape[-1]
-      other_cols = other.shape[-1] if other.ndim >= 2 else 1
-      
-      # calculating final matrix dimensions
-      if self.ndim >= 2 and other.ndim >= 2:
-        matrix_shape = (self_rows, other_cols)
-      elif self.ndim == 1 and other.ndim >= 2:
-        matrix_shape = (other_cols,)
-      elif self.ndim >= 2 and other.ndim == 1:
-        matrix_shape = (self_rows,)
-      else:  # both 1D
-        matrix_shape = ()
-
-      out_shape = tuple(broadcasted_batch) + matrix_shape
-
-    # creating output array
+    # creating output array and let C backend handle shape calculation
     out = array(result_ptr)
-    out.shape, out.size = out_shape, 1
-    for dim in out_shape:
-      out.size *= dim
-    out.ndim, out.strides, out.dtype = len(out_shape), get_strides(out_shape), self.dtype
+    # getting actual shape from C backend instead of calculating in Python
+    shape_ptr = lib.out_shape(out.data)
+    size = lib.out_size(out.data)
+    ndim = out.data.ndim
+
+    out.shape = tuple(shape_ptr[i] for i in range(ndim))
+    out.size, out.ndim, out.dtype = size, ndim, self.dtype
+    out.strides = get_strides(out.shape)
     return out
 
   def __matmul__(self, other) -> "array":
-    """
-    Matrix multiplication operator (@).
-    
-    Parameters:
-    -----------
-    other : array
-        Right-hand operand for matrix multiplication.
-    
-    Returns:
-    --------
-    array : Result of matrix multiplication.
-    """
+    """Matrix multiplication operator (@)."""
     return self._matmul(other)
 
   def to_list(self) -> List[Any]:
