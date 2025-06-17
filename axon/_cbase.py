@@ -71,6 +71,18 @@ lib.out_strides.restype = POINTER(c_int)
 lib.out_size.argtypes = [POINTER(CArray)]
 lib.out_size.restype = c_int
 
+# contiguous ops
+lib.contiguous_array.argtypes = [POINTER(CArray)]
+lib.contiguous_array.restype = POINTER(CArray)
+lib.is_contiguous_array.argtypes = [POINTER(CArray)]
+lib.is_contiguous_array.restype = POINTER(CArray)
+lib.make_contiguous_inplace_array.argtypes = [POINTER(CArray)]
+lib.make_contiguous_inplace_array.restype = POINTER(CArray)
+lib.view_array.argtypes = [POINTER(CArray)]
+lib.view_array.restype = POINTER(CArray)
+lib.is_view_array.argtypes = [POINTER(CArray)]
+lib.is_view_array.restype = POINTER(CArray)
+
 # dtype casting functions
 lib.cast_array.argtypes = [POINTER(CArray), c_int]
 lib.cast_array.restype = POINTER(CArray)

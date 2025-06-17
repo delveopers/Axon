@@ -16,28 +16,30 @@ void transpose_1d_array_ops(float* a, float* out, int* shape) {
 
 void transpose_2d_array_ops(float* a, float* out, int* shape) {
   int rows = shape[0], cols = shape[1];
-  for (int i = 0; i < rows; i++) {
-    for (int j = 0; j < cols; j++) {
-      // Transpose: out[j][i] = a[i][j]
-      // out is cols x rows, so out[j][i] = out[j * rows + i]
-      // a is rows x cols, so a[i][j] = a[i * cols + j]
-      out[j * rows + i] = a[i * cols + j];
-    }
+  for (int idx = 0; idx < rows * cols ; ++idx) {
+    int i = idx / cols, j = idx % cols;
+    out[j * rows + i] = a[idx];
+    // Transpose: out[j][i] = a[i][j]
+    // out is cols x rows, so out[j][i] = out[j * rows + i]
+    // a is rows x cols, so a[i][j] = a[idx]
+    // this brings down time complexity from O(n2) -> O(n)
   }
 }
 
 void transpose_3d_array_ops(float* a, float* out, int* shape) {
-  int dim0 = shape[0], dim1 = shape[1], dim2 = shape[2];
+  int B = shape[0], R = shape[1], C = shape[2];
+  int total = B * R * C;
   
   // For 3D transpose, we reverse all dimensions: (d0, d1, d2) -> (d2, d1, d0)
-  for (int i = 0; i < dim0; i++) {
-    for (int j = 0; j < dim1; j++) {
-      for (int k = 0; k < dim2; k++) {
-        // Original: a[i][j][k] = a[i * dim1 * dim2 + j * dim2 + k]
-        // Transposed: out[k][j][i] = out[k * dim1 * dim0 + j * dim0 + i]
-        out[k * dim1 * dim0 + j * dim0 + i] = a[i * dim1 * dim2 + j * dim2 + k];
-      }
-    }
+  for (int idx = 0; idx < total; ++idx) {
+    int b = idx / (R * C), rem = idx % (R * C);
+    int i = rem / C, j = rem % C;
+
+    // Original: a[i][j][k] = a[i * dim1 * dim2 + j * dim2 + k]
+    // Transposed: out[k][j][i] = out[k * dim1 * dim0 + j * dim0 + i]
+    // this brings down time complexity from O(n3) -> O(n)
+    int out_idx = b * (C * R) + j * R + i;
+    out[out_idx] = a[idx];
   }
 }
 

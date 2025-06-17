@@ -1,5 +1,7 @@
 # Axon
 
+![axonlogo.png](https://github.com/delveopers/Axon/blob/main/logo.png)
+
 Lightweight multi-dimensional array manipulation library powered by GPU, similar to NumPy, but trying to be better.
 
 ## Features
@@ -10,6 +12,8 @@ Lightweight multi-dimensional array manipulation library powered by GPU, similar
 - Trigonometric functions: `sin`, `cos`, `tan`, etc.
 - Auto handling of `CArray`, scalars, and lists
 - Simple `__str__`/`__repr__` for pretty printing
+- Reshape, transpose, flatten
+- Data type conversion
 
 ## Requirements
 
@@ -30,78 +34,42 @@ Place the compiled `.dll` (on Windows) or `.so` (Linux/macOS) in your `axon/` fo
 Here's a quick demo of how Axon works:
 
 ```python
+import axon
 from axon import array
 
-a1 = array([[2, -3, 5], [-9, 0, -5]])
-a2 = array([[2, -3, 5], [-9, 0, -5]])
+# Create two 2D arrays
+a = array([[1, 2], [3, 4]], dtype=axon.int32)
+b = array([[5, 6], [7, 8]], dtype=axon.int32)
 
-c = a1 + a2
-d = c + 5
+# Addition
+c = a + b
+print("Addition:\n", c)
 
-print(a1)
-print(a2)
-print(c)
-print(d.sin())
+# Multiplication
+d = a * b
+print("Multiplication:\n", d)
 
-print(d.shape, d.size, d.ndim)
-print(c.shape, c.size, c.ndim)
+# Matrix Multiplication
+e = a @ b
+print("Matrix Multiplication:\n", e)
 ```
 
 ### Output
 
-```text
-axon.array([
-    [2.00, -3.00, 5.00],
-    [-9.00, 0.00, -5.00]
-])
-
-axon.array([
-    [2.00, -3.00, 5.00],
-    [-9.00, 0.00, -5.00]
-])
-
-axon.array([
-    [4.00, -6.00, 10.00],
-    [-18.00, 0.00, -10.00]
-])
-
-axon.array([
-    [0.41, -0.84, 0.65],
-    [-0.42, -0.96, 0.96]
-])
-
-(2, 3) 6 2
-(2, 3) 6 2
+```
+Addition:
+ array([6, 8], [10, 12], dtype=int32)
+Multiplication:
+ array([5, 12], [21, 32], dtype=int32)
+Matrix Multiplication:
+ array([19, 22], [43, 50], dtype=int32)
 ```
 
-## Internals
+anyway, prefer documentation for detailed usage guide:
 
-The `array` class wraps a C structure called `CArray` which stores:
-
-- A flattened data array
-- Shape and dimension metadata
-- Functions for operations are delegated to native code via `ctypes`.
-
-## API
-
-```python
-array(data: Union[list, int, float])
-```
-
-### Operators
-
-- `a + b` / `a + 5`
-- `a - b` / `a - 2.5`
-- `a * b` / `a * 3`
-- `a / b` / `a / 1.5`
-
-### Trig Functions
-
-- `a.sin()`
-- `a.cos()`
-- `a.tan()`
-- `a.sinh()`, `cosh()`, `tanh()`
+1. [usage.md](https://github.com/delveopers/Axon/blob/main/docs/Usage.md): for user guide & documentation
+2. [technical.md](https://github.com/delveopers/Axon/blob/main/docs/Technical.md): for contirbutors & contirbution related guide
 
 ## License
 
-This project is under the [Apache-2.0](./LICENSE) License.
+This project is under the [Apache-2.0](LICENSE) License.

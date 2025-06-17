@@ -536,7 +536,6 @@ Array* matmul_array(Array* a, Array* b) {
   // converting both arrays to float32 for computation
   float* a_float = convert_to_float32(a->data, a->dtype, a->size);
   float* b_float = convert_to_float32(b->data, b->dtype, b->size);
-
   if (a_float == NULL || b_float == NULL) {
     fprintf(stderr, "Memory allocation failed during dtype conversion\n");
     if (a_float) free(a_float);
@@ -544,8 +543,7 @@ Array* matmul_array(Array* a, Array* b) {
     exit(EXIT_FAILURE);
   }
 
-  // result shape: [a->shape[0], b->shape[1]]
-  int* result_shape = (int*)malloc(2 * sizeof(int));
+  int* result_shape = (int*)malloc(2 * sizeof(int));    // result shape: [a->shape[0], b->shape[1]]
   if (result_shape == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
     free(a_float);
@@ -553,7 +551,7 @@ Array* matmul_array(Array* a, Array* b) {
     exit(EXIT_FAILURE);
   }
   result_shape[0] = a->shape[0];
-  result_shape[1] = b->shape[1];
+  result_shape[1] = b->shape[1];  // result is A rows × B rows (since we're doing A @ B^T)
   size_t result_size = result_shape[0] * result_shape[1];
 
   float* out = (float*)malloc(result_size * sizeof(float));
@@ -565,7 +563,8 @@ Array* matmul_array(Array* a, Array* b) {
     exit(EXIT_FAILURE);
   }
 
-  matmul_array_ops(a_float, b_float, out, result_size, a->shape, b->shape);
+  // performing optimized matrix multiplication (regular A @ B)
+  matmul_array_ops(a_float, b_float, out, a->shape, b->shape);
   dtype_t result_dtype = promote_dtypes(a->dtype, b->dtype);
   Array* result = create_array(out, 2, result_shape, result_size, result_dtype);
   free(a_float);
@@ -630,7 +629,7 @@ Array* batch_matmul_array(Array* a, Array* b) {
   int a_strides[3] = {a->shape[1] * a->shape[2], a->shape[2], 1};
   int b_strides[3] = {b->shape[1] * b->shape[2], b->shape[2], 1};
 
-  batch_matmul_array_ops(a_float, b_float, out, result_size, a->shape, b->shape, a_strides, b_strides);
+  batch_matmul_array_ops(a_float, b_float, out, a->shape, b->shape, a_strides, b_strides);
   dtype_t result_dtype = promote_dtypes(a->dtype, b->dtype);
   Array* result = create_array(out, 3, result_shape, result_size, result_dtype);
   free(a_float);
@@ -691,7 +690,7 @@ Array* broadcasted_matmul_array(Array* a, Array* b) {
   int a_strides[2] = {a->shape[1], 1};
   int b_strides[3] = {b->shape[1] * b->shape[2], b->shape[2], 1};
 
-  broadcasted_matmul_array_ops(a_float, b_float, out, result_size, a->shape, b->shape, a_strides, b_strides);
+  broadcasted_matmul_array_ops(a_float, b_float, out, a->shape, b->shape, a_strides, b_strides);
   dtype_t result_dtype = promote_dtypes(a->dtype, b->dtype);
   Array* result = create_array(out, 3, result_shape, result_size, result_dtype);
   free(a_float);
