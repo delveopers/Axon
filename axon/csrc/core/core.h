@@ -56,17 +56,6 @@ extern "C" {
   // utility functions
   int is_view_array(Array* self);
   Array* copy_array(Array* self);
-
-  // array creation functions with dtype support
-  Array* zeros_like_array(Array* a);
-  Array* zeros_array(int* shape, size_t size, size_t ndim, dtype_t dtype);
-  Array* ones_like_array(Array* a);
-  Array* ones_array(int* shape, size_t size, size_t ndim, dtype_t dtype);
-  Array* randn_array(int* shape, size_t size, size_t ndim, dtype_t dtype);
-  Array* randint_array(int low, int high, int* shape, size_t size, size_t ndim, dtype_t dtype);
-  Array* uniform_array(int low, int high, int* shape, size_t size, size_t ndim, dtype_t dtype);
-  Array* fill_array(float fill_val, int* shape, size_t size, size_t ndim, dtype_t dtype);
-  Array* linspace_array(float start, float step, float end, int* shape, size_t size, size_t ndim, dtype_t dtype);
 }
 
 #endif  //!__CORE__H__

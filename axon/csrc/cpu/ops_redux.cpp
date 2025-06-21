@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
-#include "red_ops.h"
+#include "ops_redux.h"
 
 void max_array_ops(float* a, float* out, size_t size, int* shape, int* strides, int* res_shape, int axis, int ndim) {
   if (axis == -1) {

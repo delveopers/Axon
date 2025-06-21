@@ -1,5 +1,5 @@
-#ifndef __UTILS__H__
-#define __UTILS__H__
+#ifndef __OPS_SHAPE__H__
+#define __OPS_SHAPE__H__
 
 #include <stdlib.h>
 

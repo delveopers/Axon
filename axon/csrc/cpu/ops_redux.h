@@ -3,8 +3,8 @@
   @brief contains all the reduction operations helper functions
 */
 
-#ifndef __RED_OPS__H__
-#define __RED_OPS__H__
+#ifndef __OPS_REDUX__H__
+#define __OPS_REDUX__H__
 
 #include <stdlib.h>
 

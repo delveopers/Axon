@@ -1,5 +1,5 @@
-#ifndef __BINARY_OPS__H__
-#define __BINARY_OPS__H__
+#ifndef __OPS_ARRAY__H__
+#define __OPS_ARRAY__H__
 
 #include <stddef.h>
 
