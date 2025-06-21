@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stddef.h>
-#include "utils.h"
+#include "ops_shape.h"
 
 void reassign_array_ops(float* a, float* out, size_t size) {
   for (int i = 0; i < size; i++) { out[i] = a[i]; }

@@ -1,7 +1,7 @@
-#include "binary_ops.h"
-#include "cpu/maths_ops.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "binary_ops.h"
+#include "cpu/ops_binary.h"
 
 Array* add_array(Array* a, Array* b) {
   if (a == NULL || b == NULL) {

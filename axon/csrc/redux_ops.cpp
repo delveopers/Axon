@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include "redux_ops.h"
-#include "cpu/red_ops.h"
+#include "cpu/ops_redux.h"
 
 Array* sum_array(Array* a, int axis, bool keepdims) {
   if (a == NULL) {
