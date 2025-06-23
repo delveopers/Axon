@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "axon-py"
-version = "0.0.1"
+version = "0.0.2"
 description = "Multi-dimensional tensor library with custom C/C++ backend and Python frontend"
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -14,6 +14,9 @@ classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Programming Language :: C",
   "Programming Language :: C++",
   "Operating System :: OS Independent"
@@ -22,6 +25,7 @@ classifiers = [
 [tool.scikit-build]
 cmake.source-dir = "."
 cmake.build-type = "Release"
+cmake.args = ["-G", "Ninja"]  # Force Ninja generator
 wheel.expand-macos-universal-tags = true
 wheel.install-dir = "axon"
 install.components = ["python_modules"]
