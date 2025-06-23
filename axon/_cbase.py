@@ -1,229 +1,73 @@
-import ctypes, os
+import ctypes, os, sys, platform, sysconfig
 from ctypes import Structure, c_float, c_double, c_int, c_int8, c_int16, c_int32, c_int64, c_uint8, c_uint16, c_uint32, c_uint64, c_size_t, c_void_p, c_char_p, POINTER
 from typing import *
 
-lib_path = os.path.join(os.path.dirname(__file__), '../build/libarray.so')
-lib = ctypes.CDLL(lib_path)
+def _get_lib_path():
+  pkg_dir = os.path.dirname(__file__)
+  lib_names = [f"libarray{sysconfig.get_config_var('EXT_SUFFIX') or '.so'}", "libarray.dll", "array.pyd", "libarray.so"]
+  for lib_name in lib_names:
+    for root, dirs, files in os.walk(pkg_dir):
+      if lib_name in files: return os.path.join(root, lib_name)
+  build_dir = os.path.join(pkg_dir, '../build')
+  return next((os.path.join(build_dir, name) for name in lib_names if os.path.exists(os.path.join(build_dir, name))), None)
+lib = ctypes.CDLL(_get_lib_path())
 
-# dtype enumeration
 class DType:
-  FLOAT32 = 0
-  FLOAT64 = 1
-  INT8 = 2
-  INT16 = 3
-  INT32 = 4
-  INT64 = 5
-  UINT8 = 6
-  UINT16 = 7
-  UINT32 = 8
-  UINT64 = 9
-  BOOL = 10
+  FLOAT32, FLOAT64, INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64, BOOL = range(11)
 
-# dtype union
 class DTypeValue(ctypes.Union):
-  _fields_ = [
-    ("f32", c_float),
-    ("f64", c_double),
-    ("i8", c_int8),
-    ("i16", c_int16),
-    ("i32", c_int32),
-    ("i64", c_int64),
-    ("u8", c_uint8),
-    ("u16", c_uint16),
-    ("u32", c_uint32),
-    ("u64", c_uint64),
-    ("boolean", c_uint8),
-  ]
+  _fields_ = [("f32", c_float), ("f64", c_double), ("i8", c_int8), ("i16", c_int16), ("i32", c_int32), ("i64", c_int64), ("u8", c_uint8), ("u16", c_uint16), ("u32", c_uint32), ("u64", c_uint64), ("boolean", c_uint8)]
 
 class CArray(Structure):
-  pass
+  _fields_ = [("data", c_void_p), ("strides", POINTER(c_int)), ("backstrides", POINTER(c_int)), ("shape", POINTER(c_int)), ("size", c_size_t), ("ndim", c_size_t), ("dtype", c_int), ("is_view", c_int)]
 
-CArray._fields_ = [
-  ("data", c_void_p),
-  ("strides", POINTER(c_int)),
-  ("backstrides", POINTER(c_int)),
-  ("shape", POINTER(c_int)),
-  ("size", c_size_t),
-  ("ndim", c_size_t),
-  ("dtype", c_int),
-  ("is_view", c_int),
-]
+def _setup_func(name, argtypes, restype):
+  func = getattr(lib, name)
+  func.argtypes, func.restype = argtypes, restype
+  return func
 
-# core array functions
-lib.create_array.argtypes = [POINTER(c_float), c_size_t, POINTER(c_int), c_size_t, c_int]
-lib.create_array.restype = POINTER(CArray)
-lib.delete_array.argtypes = [POINTER(CArray)]
-lib.delete_array.restype = None
-lib.delete_data.argtypes = [POINTER(CArray)]
-lib.delete_data.restype = None
-lib.delete_shape.argtypes = [POINTER(CArray)]
-lib.delete_shape.restype = None
-lib.delete_strides.argtypes = [POINTER(CArray)]
-lib.delete_strides.restype = None
-lib.print_array.argtypes = [POINTER(CArray)]
-lib.print_array.restype = None
-lib.out_data.argtypes = [POINTER(CArray)]
-lib.out_data.restype = POINTER(c_float)
-lib.out_shape.argtypes = [POINTER(CArray)]
-lib.out_shape.restype = POINTER(c_int)
-lib.out_strides.argtypes = [POINTER(CArray)]
-lib.out_strides.restype = POINTER(c_int)
-lib.out_size.argtypes = [POINTER(CArray)]
-lib.out_size.restype = c_int
+_funcs = {
+  'create_array': ([POINTER(c_float), c_size_t, POINTER(c_int), c_size_t, c_int], POINTER(CArray)),
+  'delete_array': ([POINTER(CArray)], None), 'delete_data': ([POINTER(CArray)], None),
+  'delete_shape': ([POINTER(CArray)], None), 'delete_strides': ([POINTER(CArray)], None),
+  'print_array': ([POINTER(CArray)], None), 'out_data': ([POINTER(CArray)], POINTER(c_float)),
+  'out_shape': ([POINTER(CArray)], POINTER(c_int)), 'out_strides': ([POINTER(CArray)], POINTER(c_int)),
+  'out_size': ([POINTER(CArray)], c_int), 'contiguous_array': ([POINTER(CArray)], POINTER(CArray)),
+  'is_contiguous_array': ([POINTER(CArray)], POINTER(CArray)), 'make_contiguous_inplace_array': ([POINTER(CArray)], POINTER(CArray)),
+  'view_array': ([POINTER(CArray)], POINTER(CArray)), 'is_view_array': ([POINTER(CArray)], POINTER(CArray)),
+  'cast_array': ([POINTER(CArray), c_int], POINTER(CArray)), 'cast_array_simple': ([POINTER(CArray), c_int], POINTER(CArray)),
+  'get_dtype_size': ([c_int], c_size_t), 'get_dtype_name': ([c_int], c_char_p),
+  'dtype_to_float32': ([c_void_p, c_int, c_size_t], c_float), 'float32_to_dtype': ([c_float, c_void_p, c_int, c_size_t], None),
+  'convert_to_float32': ([c_void_p, c_int, c_size_t], POINTER(c_float)), 'convert_from_float32': ([POINTER(c_float), c_void_p, c_int, c_size_t], None),
+  'allocate_dtype_array': ([c_int, c_size_t], c_void_p), 'copy_with_dtype_conversion': ([c_void_p, c_int, c_void_p, c_int, c_size_t], None),
+  'cast_array_dtype': ([c_void_p, c_int, c_int, c_size_t], c_void_p), 'is_integer_dtype': ([c_int], c_int),
+  'is_float_dtype': ([c_int], c_int), 'is_unsigned_dtype': ([c_int], c_int), 'is_signed_dtype': ([c_int], c_int),
+  'clamp_to_int_range': ([c_double, c_int], c_int64), 'clamp_to_uint_range': ([c_double, c_int], c_uint64),
+  'get_dtype_priority': ([c_int], c_int), 'promote_dtypes': ([c_int, c_int], c_int),
+  'add_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'add_scalar_array': ([POINTER(CArray), c_float], POINTER(CArray)),
+  'add_broadcasted_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'sub_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'sub_scalar_array': ([POINTER(CArray), c_float], POINTER(CArray)), 'sub_broadcasted_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'mul_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'mul_scalar_array': ([POINTER(CArray), c_float], POINTER(CArray)),
+  'mul_broadcasted_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'div_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'div_scalar_array': ([POINTER(CArray), c_float], POINTER(CArray)), 'div_broadcasted_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'pow_array': ([POINTER(CArray), c_float], POINTER(CArray)), 'pow_scalar': ([c_float, POINTER(CArray)], POINTER(CArray)),
+  'log_array': ([POINTER(CArray)], POINTER(CArray)), 'exp_array': ([POINTER(CArray)], POINTER(CArray)),
+  'abs_array': ([POINTER(CArray)], POINTER(CArray)), 'matmul_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'batch_matmul_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'broadcasted_matmul_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'sin_array': ([POINTER(CArray)], POINTER(CArray)), 'sinh_array': ([POINTER(CArray)], POINTER(CArray)),
+  'cos_array': ([POINTER(CArray)], POINTER(CArray)), 'cosh_array': ([POINTER(CArray)], POINTER(CArray)),
+  'tan_array': ([POINTER(CArray)], POINTER(CArray)), 'tanh_array': ([POINTER(CArray)], POINTER(CArray)),
+  'transpose_array': ([POINTER(CArray)], POINTER(CArray)), 'equal_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'reshape_array': ([POINTER(CArray), POINTER(c_int), c_int], POINTER(CArray)), 'squeeze_array': ([POINTER(CArray), c_int], POINTER(CArray)),
+  'expand_dims_array': ([POINTER(CArray), c_int], POINTER(CArray)), 'flatten_array': ([POINTER(CArray)], POINTER(CArray)),
+  'sum_array': ([POINTER(CArray), c_int, ctypes.c_bool], POINTER(CArray)), 'min_array': ([POINTER(CArray), c_int, ctypes.c_bool], POINTER(CArray)),
+  'max_array': ([POINTER(CArray), c_int, ctypes.c_bool], POINTER(CArray)), 'mean_array': ([POINTER(CArray), c_int, ctypes.c_bool], POINTER(CArray)),
+  'var_array': ([POINTER(CArray), c_int, c_int], POINTER(CArray)), 'std_array': ([POINTER(CArray), c_int, c_int], POINTER(CArray)),
+  'zeros_like_array': ([POINTER(CArray)], POINTER(CArray)), 'ones_like_array': ([POINTER(CArray)], POINTER(CArray)),
+  'zeros_array': ([POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)), 'ones_array': ([POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)),
+  'randn_array': ([POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)), 'randint_array': ([c_int, c_int, POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)),
+  'uniform_array': ([c_int, c_int, POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)), 'fill_array': ([c_float, POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)),
+  'linspace_array': ([c_float, c_float, c_float, POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray))
+}
 
-# contiguous ops
-lib.contiguous_array.argtypes = [POINTER(CArray)]
-lib.contiguous_array.restype = POINTER(CArray)
-lib.is_contiguous_array.argtypes = [POINTER(CArray)]
-lib.is_contiguous_array.restype = POINTER(CArray)
-lib.make_contiguous_inplace_array.argtypes = [POINTER(CArray)]
-lib.make_contiguous_inplace_array.restype = POINTER(CArray)
-lib.view_array.argtypes = [POINTER(CArray)]
-lib.view_array.restype = POINTER(CArray)
-lib.is_view_array.argtypes = [POINTER(CArray)]
-lib.is_view_array.restype = POINTER(CArray)
-
-# dtype casting functions
-lib.cast_array.argtypes = [POINTER(CArray), c_int]
-lib.cast_array.restype = POINTER(CArray)
-lib.cast_array_simple.argtypes = [POINTER(CArray), c_int]
-lib.cast_array_simple.restype = POINTER(CArray)
-
-# dtype utility functions
-lib.get_dtype_size.argtypes = [c_int]
-lib.get_dtype_size.restype = c_size_t
-lib.get_dtype_name.argtypes = [c_int]
-lib.get_dtype_name.restype = c_char_p
-lib.dtype_to_float32.argtypes = [c_void_p, c_int, c_size_t]
-lib.dtype_to_float32.restype = c_float
-lib.float32_to_dtype.argtypes = [c_float, c_void_p, c_int, c_size_t]
-lib.float32_to_dtype.restype = None
-lib.convert_to_float32.argtypes = [c_void_p, c_int, c_size_t]
-lib.convert_to_float32.restype = POINTER(c_float)
-lib.convert_from_float32.argtypes = [POINTER(c_float), c_void_p, c_int, c_size_t]
-lib.convert_from_float32.restype = None
-lib.allocate_dtype_array.argtypes = [c_int, c_size_t]
-lib.allocate_dtype_array.restype = c_void_p
-lib.copy_with_dtype_conversion.argtypes = [c_void_p, c_int, c_void_p, c_int, c_size_t]
-lib.copy_with_dtype_conversion.restype = None
-lib.cast_array_dtype.argtypes = [c_void_p, c_int, c_int, c_size_t]
-lib.cast_array_dtype.restype = c_void_p
-
-# dtype helper functions
-lib.is_integer_dtype.argtypes = [c_int]
-lib.is_integer_dtype.restype = c_int
-lib.is_float_dtype.argtypes = [c_int]
-lib.is_float_dtype.restype = c_int
-lib.is_unsigned_dtype.argtypes = [c_int]
-lib.is_unsigned_dtype.restype = c_int
-lib.is_signed_dtype.argtypes = [c_int]
-lib.is_signed_dtype.restype = c_int
-lib.clamp_to_int_range.argtypes = [c_double, c_int]
-lib.clamp_to_int_range.restype = c_int64
-lib.clamp_to_uint_range.argtypes = [c_double, c_int]
-lib.clamp_to_uint_range.restype = c_uint64
-lib.get_dtype_priority.argtypes = [c_int]
-lib.get_dtype_priority.restype = c_int
-lib.promote_dtypes.argtypes = [c_int, c_int]
-lib.promote_dtypes.restype = c_int
-
-# maths ops ----
-lib.add_array.argtypes = [POINTER(CArray), POINTER(CArray)]
-lib.add_array.restype = POINTER(CArray)
-lib.add_scalar_array.argtypes = [POINTER(CArray), c_float]
-lib.add_scalar_array.restype = POINTER(CArray)
-lib.add_broadcasted_array.argtypes = [POINTER(CArray), POINTER(CArray)]
-lib.add_broadcasted_array.restype = POINTER(CArray)
-lib.sub_array.argtypes = [POINTER(CArray), POINTER(CArray)]
-lib.sub_array.restype = POINTER(CArray)
-lib.sub_scalar_array.argtypes = [POINTER(CArray), c_float]
-lib.sub_scalar_array.restype = POINTER(CArray)
-lib.sub_broadcasted_array.argtypes = [POINTER(CArray), POINTER(CArray)]
-lib.sub_broadcasted_array.restype = POINTER(CArray)
-lib.mul_array.argtypes = [POINTER(CArray), POINTER(CArray)]
-lib.mul_array.restype = POINTER(CArray)
-lib.mul_scalar_array.argtypes = [POINTER(CArray), c_float]
-lib.mul_scalar_array.restype = POINTER(CArray)
-lib.mul_broadcasted_array.argtypes = [POINTER(CArray), POINTER(CArray)]
-lib.mul_broadcasted_array.restype = POINTER(CArray)
-lib.div_array.argtypes = [POINTER(CArray), POINTER(CArray)]
-lib.div_array.restype = POINTER(CArray)
-lib.div_scalar_array.argtypes = [POINTER(CArray), c_float]
-lib.div_scalar_array.restype = POINTER(CArray)
-lib.div_broadcasted_array.argtypes = [POINTER(CArray), POINTER(CArray)]
-lib.div_broadcasted_array.restype = POINTER(CArray)
-lib.pow_array.argtypes = [POINTER(CArray), c_float]
-lib.pow_array.restype = POINTER(CArray)
-lib.pow_scalar.argtypes = [c_float, POINTER(CArray)]
-lib.pow_scalar.restype = POINTER(CArray)
-lib.log_array.argtypes = [POINTER(CArray)]
-lib.log_array.restype = POINTER(CArray)
-lib.exp_array.argtypes = [POINTER(CArray)]
-lib.exp_array.restype = POINTER(CArray)
-lib.abs_array.argtypes = [POINTER(CArray)]
-lib.abs_array.restype = POINTER(CArray)
-lib.matmul_array.argtypes = [POINTER(CArray), POINTER(CArray)]
-lib.matmul_array.restype = POINTER(CArray)
-lib.batch_matmul_array.argtypes = [POINTER(CArray), POINTER(CArray)]
-lib.batch_matmul_array.restype = POINTER(CArray)
-lib.broadcasted_matmul_array.argtypes = [POINTER(CArray), POINTER(CArray)]
-lib.broadcasted_matmul_array.restype = POINTER(CArray)
-
-lib.sin_array.argtypes = [POINTER(CArray)]
-lib.sin_array.restype = POINTER(CArray)
-lib.sinh_array.argtypes = [POINTER(CArray)]
-lib.sinh_array.restype = POINTER(CArray)
-lib.cos_array.argtypes = [POINTER(CArray)]
-lib.cos_array.restype = POINTER(CArray)
-lib.cosh_array.argtypes = [POINTER(CArray)]
-lib.cosh_array.restype = POINTER(CArray)
-lib.tan_array.argtypes = [POINTER(CArray)]
-lib.tan_array.restype = POINTER(CArray)
-lib.tanh_array.argtypes = [POINTER(CArray)]
-lib.tanh_array.restype = POINTER(CArray)
-
-lib.transpose_array.argtypes = [POINTER(CArray)]
-lib.transpose_array.restype = POINTER(CArray)
-lib.equal_array.argtypes = [POINTER(CArray), POINTER(CArray)]
-lib.equal_array.restype = POINTER(CArray)
-lib.reshape_array.argtypes = [POINTER(CArray), POINTER(c_int), c_int]
-lib.reshape_array.restype = POINTER(CArray)
-lib.squeeze_array.argtypes = [POINTER(CArray), c_int]
-lib.squeeze_array.restype = POINTER(CArray)
-lib.expand_dims_array.argtypes = [POINTER(CArray), c_int]
-lib.expand_dims_array.restype = POINTER(CArray)
-lib.flatten_array.argtypes = [POINTER(CArray)]
-lib.flatten_array.restype = POINTER(CArray)
-
-lib.sum_array.argtypes = [POINTER(CArray), c_int, ctypes.c_bool]
-lib.sum_array.restype = POINTER(CArray)
-lib.min_array.argtypes = [POINTER(CArray), c_int, ctypes.c_bool]
-lib.min_array.restype = POINTER(CArray)
-lib.max_array.argtypes = [POINTER(CArray), c_int, ctypes.c_bool]
-lib.max_array.restype = POINTER(CArray)
-lib.mean_array.argtypes = [POINTER(CArray), c_int, ctypes.c_bool]
-lib.mean_array.restype = POINTER(CArray)
-lib.var_array.argtypes = [POINTER(CArray), c_int, c_int]
-lib.var_array.restype = POINTER(CArray)
-lib.std_array.argtypes = [POINTER(CArray), c_int, c_int]
-lib.std_array.restype = POINTER(CArray)
-
-# utils functions ---
-lib.zeros_like_array.argtypes = [POINTER(CArray)]
-lib.zeros_like_array.restype = POINTER(CArray)
-lib.ones_like_array.argtypes = [POINTER(CArray)]
-lib.ones_like_array.restype = POINTER(CArray)
-lib.zeros_array.argtypes = [POINTER(c_int), c_size_t, c_size_t, c_int]
-lib.zeros_array.restype = POINTER(CArray)
-lib.ones_array.argtypes = [POINTER(c_int), c_size_t, c_size_t, c_int]
-lib.ones_array.restype = POINTER(CArray)
-lib.randn_array.argtypes = [POINTER(c_int), c_size_t, c_size_t, c_int]
-lib.randn_array.restype = POINTER(CArray)
-lib.randint_array.argtypes = [c_int, c_int, POINTER(c_int), c_size_t, c_size_t, c_int]
-lib.randint_array.restype = POINTER(CArray)
-lib.uniform_array.argtypes = [c_int, c_int, POINTER(c_int), c_size_t, c_size_t, c_int]
-lib.uniform_array.restype = POINTER(CArray)
-lib.fill_array.argtypes = [c_float, POINTER(c_int), c_size_t, c_size_t, c_int]
-lib.fill_array.restype = POINTER(CArray)
-lib.linspace_array.argtypes = [c_float, c_float, c_float, POINTER(c_int), c_size_t, c_size_t, c_int]
-lib.linspace_array.restype = POINTER(CArray)
+for name, (argtypes, restype) in _funcs.items(): _setup_func(name, argtypes, restype)
