@@ -1,17 +1,14 @@
 [build-system]
-requires = ["setuptools>=61", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build-core", "cmake>=3.18", "ninja"]
+build-backend = "scikit_build_core.build"
 
 [project]
 name = "axon-py"
 version = "0.0.1"
 description = "Multi-dimensional tensor library with custom C/C++ backend and Python frontend"
 readme = "README.md"
-license = "Apache-2.0"
-license-files = ["LICENSE"]
-authors = [
-  {name = "Shivendra S", email = "shivharsh44@gmail.com"}
-]
+license = {text = "Apache-2.0"}
+authors = [{name = "Shivendra S", email = "shivharsh44@gmail.com"}]
 requires-python = ">=3.11"
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
@@ -22,15 +19,17 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 
-[tool.setuptools]
-include-package-data = true
+[tool.scikit-build]
+cmake.source-dir = "."
+cmake.build-type = "Release"
+wheel.expand-macos-universal-tags = true
+wheel.install-dir = "axon"
+install.components = ["python_modules"]
 
-[tool.setuptools.package-data]
-"src" = ["lib/*.so", "lib/*.dll", "lib/*.dylib", "csrc/**/*", "inc/*"]
+[tool.scikit-build.cmake.define]
+CMAKE_EXPORT_COMPILE_COMMANDS = "ON"
+BUILD_SHARED_LIBS = "ON"
 
-[tool.setuptools.exclude-package-data]
-"src" = ["*.pyc", "__pycache__"]
-
-[tool.setuptools.dynamic]
-# This picks up README.md automatically
-readme = {file = ["README.md"]}
+[tool.cibuildwheel]
+build = "cp311-* cp312-*"
+skip = "*-win32 *-manylinux_i686"

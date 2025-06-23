@@ -4,6 +4,8 @@
 test.py
 extra.py
 
+build/*
+
 # Compiled Object files
 *.slo
 *.lo
