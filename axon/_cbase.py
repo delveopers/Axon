@@ -4,12 +4,20 @@ from typing import *
 
 def _get_lib_path():
   pkg_dir = os.path.dirname(__file__)
-  lib_names = [f"libarray{sysconfig.get_config_var('EXT_SUFFIX') or '.so'}", "libarray.dll", "array.pyd", "libarray.so"]
-  for lib_name in lib_names:
-    for root, dirs, files in os.walk(pkg_dir):
-      if lib_name in files: return os.path.join(root, lib_name)
-  build_dir = os.path.join(pkg_dir, '../build')
-  return next((os.path.join(build_dir, name) for name in lib_names if os.path.exists(os.path.join(build_dir, name))), None)
+  possible_names = ['array', 'libarray']
+  possible_exts = ['.pyd', '.dll', '.so', '.dylib', sysconfig.get_config_var('EXT_SUFFIX') or '']
+  search_dirs = [pkg_dir, os.path.join(pkg_dir, 'lib'), os.path.join(pkg_dir, '..', 'build')]
+  
+  for search_dir in search_dirs:
+    if not os.path.exists(search_dir): continue
+    for root, dirs, files in os.walk(search_dir):
+      for file in files:
+        for name in possible_names:
+          if file.startswith(name) and any(file.endswith(ext) for ext in possible_exts if ext):
+            return os.path.join(root, file)
+  
+  raise FileNotFoundError(f"Could not find array library in {search_dirs}. Available files: {[f for d in search_dirs if os.path.exists(d) for f in os.listdir(d)]}")
+
 lib = ctypes.CDLL(_get_lib_path())
 
 class DType:

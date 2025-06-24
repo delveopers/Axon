@@ -1,9 +1,20 @@
 cmake_minimum_required(VERSION 3.18)
+
+# Force Ninja generator on Windows if using MinGW
+if(WIN32 AND NOT DEFINED CMAKE_GENERATOR)
+  set(CMAKE_GENERATOR "Ninja")
+endif()
+
 project(axon-py LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# For MinGW on Windows
+if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 
 find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
 
