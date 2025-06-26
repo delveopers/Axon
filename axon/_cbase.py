@@ -60,6 +60,7 @@ _funcs = {
   'div_scalar_array': ([POINTER(CArray), c_float], POINTER(CArray)), 'div_broadcasted_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
   'pow_array': ([POINTER(CArray), c_float], POINTER(CArray)), 'pow_scalar': ([c_float, POINTER(CArray)], POINTER(CArray)),
   'log_array': ([POINTER(CArray)], POINTER(CArray)), 'exp_array': ([POINTER(CArray)], POINTER(CArray)),
+  'neg_array': ([POINTER(CArray)], POINTER(CArray)), 'sqrt_array': ([POINTER(CArray)], POINTER(CArray)),
   'abs_array': ([POINTER(CArray)], POINTER(CArray)), 'matmul_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
   'batch_matmul_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'broadcasted_matmul_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
   'sin_array': ([POINTER(CArray)], POINTER(CArray)), 'sinh_array': ([POINTER(CArray)], POINTER(CArray)),

@@ -9,6 +9,16 @@ float32, float64, double = "float32", "float64", "double"
 uint8, uint16, uint32, uint64 = "uint8", "uint16", "uint32", "uint64"
 boolean = "bool"
 
+def _parse_dtype(dtype: str) -> int:
+  dtype_map = {"float32": DType.FLOAT32, "float64": DType.FLOAT64, "int8": DType.INT8, "int16": DType.INT16, "int32": DType.INT32, "int64": DType.INT64, "uint8": DType.UINT8, "uint16": DType.UINT16, "uint32": DType.UINT32, "uint64": DType.UINT64, "bool": DType.BOOL}
+  if dtype not in dtype_map:
+    raise ValueError(f"Unsupported dtype: {dtype}. Supported dtypes: {list(dtype_map.keys())}")
+  return dtype_map[dtype]
+
+def _get_dtype_name(dtype: int) -> str:
+  dtype_names = {DType.FLOAT32: "float32", DType.FLOAT64: "float64", DType.INT8: "int8", DType.INT16: "int16", DType.INT32: "int32", DType.INT64: "int64", DType.UINT8: "uint8", DType.UINT16: "uint16", DType.UINT32: "uint32", DType.UINT64: "uint64", DType.BOOL: "bool"}
+  return dtype_names.get(dtype, "unknown")
+
 class array:
   int8, int16, int32, int64, long, float32, float64, double, uint8, uint16, uint32, uint64, boolean = int8, int16, int32, int64, long, float32, float64, double, uint8, uint16, uint32, uint64, boolean
   def __init__(self, data: Union[List[Any], int, float], dtype: str = "float32") -> None:
@@ -26,92 +36,28 @@ class array:
     --------
     None
     """
-    self.dtype = self._parse_dtype(dtype)
-    
-    if isinstance(data, (CArray, array)):
+    self.dtype = dtype
+    if isinstance(data, CArray):
+      # this condition for manual initialization of each parameters, mostly in the inside functions
       self.data, self.shape = data, []
       self.size, self.ndim, self._raw_value, self.strides = 0, 0, None, 0      
+    elif isinstance(data, array):
+      # if someone is dumb enough to call array(array(data))
+      self.data, self.shape, self.dtype = data.data, data.shape, data.dtype
+      self.size, self.ndim, self._raw_value, self.strides = data.size, data.ndim, data._raw_value, data.strides
     else:
+      # exposed `tensor` api for users
       flat, shape = flatten(data), get_shape(data)
       size, ndim = len(flat), len(shape)
 
       self._float_arr = (c_float * size)(*flat)
       self._shape_arr = (c_int * ndim)(*shape)
 
-      self.data = lib.create_array(self._float_arr, c_size_t(ndim), self._shape_arr, c_size_t(size), c_int(self.dtype))
+      self.data = lib.create_array(self._float_arr, c_size_t(ndim), self._shape_arr, c_size_t(size), c_int(_parse_dtype(self.dtype)))
       self.shape, self.size, self.ndim, self._raw_value, self.strides = tuple(shape), size, ndim, data, get_strides(shape)
 
-  def _parse_dtype(self, dtype: str) -> int:
-    """
-    Parse a string-based dtype into the internal integer enum representation.
-
-    Parameters:
-    -----------
-    dtype : str
-        Data type string (e.g., 'float32', 'int64').
-
-    Returns:
-    --------
-    int : internal enum ID for the dtype
-    """
-    dtype_map = {
-      "float32": DType.FLOAT32,
-      "float64": DType.FLOAT64,
-      "int8": DType.INT8,
-      "int16": DType.INT16,
-      "int32": DType.INT32,
-      "int64": DType.INT64,
-      "uint8": DType.UINT8,
-      "uint16": DType.UINT16,
-      "uint32": DType.UINT32,
-      "uint64": DType.UINT64,
-      "bool": DType.BOOL,
-    }
-    if dtype not in dtype_map:
-      raise ValueError(f"Unsupported dtype: {dtype}. Supported dtypes: {list(dtype_map.keys())}")
-    return dtype_map[dtype]
-
-  def _get_dtype_name(self) -> str:
-    """
-    Get the string name of the current internal dtype.
-
-    Returns:
-    --------
-    str : name of the dtype (e.g., 'float32')
-    """
-    dtype_names = {
-      DType.FLOAT32: "float32",
-      DType.FLOAT64: "float64",
-      DType.INT8: "int8",
-      DType.INT16: "int16",
-      DType.INT32: "int32",
-      DType.INT64: "int64",
-      DType.UINT8: "uint8",
-      DType.UINT16: "uint16",
-      DType.UINT32: "uint32",
-      DType.UINT64: "uint64",
-      DType.BOOL: "bool",
-    }
-    return dtype_names.get(self.dtype, "unknown")
-
-  def __repr__(self) -> str:
-    """
-    Official string representation of the array object.
-
-    Returns:
-    --------
-    str : repr-style output displaying original data and dtype.
-    """
-    return f"array({self._raw_value}, dtype={self._get_dtype_name()})"
-
+  def __repr__(self) -> str: return f"array({self._raw_value}, dtype={self.dtype})"
   def __str__(self) -> str:
-    """
-    User-friendly string version showing formatted array contents.
-
-    Returns:
-    --------
-    str : An empty string (actual printing is done through C backend).
-    """
     lib.print_array(self.data)
     return ""
 
@@ -128,11 +74,11 @@ class array:
     --------
     array : A new array object casted to the specified dtype.
     """
-    new_dtype = self._parse_dtype(dtype)
+    new_dtype = _parse_dtype(dtype)
     result_ptr = lib.cast_array(self.data, c_int(new_dtype)).contents
     out = array(result_ptr)
     out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
-    out.dtype = new_dtype
+    out.dtype = dtype
     return out
 
   def is_contiguous(self) -> bool:
@@ -344,6 +290,20 @@ class array:
     """
     return (self / other) ** -1
 
+  def __neg__(self) -> "array":
+    """
+    flips the sign of the elements
+
+    Returns:
+    --------
+    array : Array with flipped sign of each element.
+    """
+    result_ptr = lib.neg_array(self.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
+    out.dtype = self.dtype
+    return out
+
   def __pow__(self, exp) -> "array":
     """
     Elementwise power of self to another array or scalar.
@@ -411,6 +371,20 @@ class array:
     array : Array with natural logarithm of each element.
     """
     result_ptr = lib.log_array(self.data).contents
+    out = array(result_ptr)
+    out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
+    out.dtype = self.dtype
+    return out
+
+  def sqrt(self) -> "array":
+    """
+    Compute the square root of the array.
+
+    Returns:
+    --------
+    array : Array with sqrt of each element.
+    """
+    result_ptr = lib.sqrt_array(self.data).contents
     out = array(result_ptr)
     out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
     out.dtype = self.dtype
