@@ -3,6 +3,14 @@
 #include <math.h>
 #include "ops_unary.h"
 
+void sqrt_array_ops(float* a, float* out, size_t size) {
+  for (size_t i = 0; i < size; i++) { out[i] = sqrtf(a[i]); }
+}
+
+void neg_array_ops(float* a, float* out, size_t size) {
+  for (size_t i = 0; i < size; i++) { out[i] = -a[i]; }
+}
+
 void exp_array_ops(float* a, float* out, size_t size) {
   for (size_t i = 0; i < size; i++) { out[i] = expf(a[i]); }
 }

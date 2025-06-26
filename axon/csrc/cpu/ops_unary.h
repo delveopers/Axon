@@ -4,6 +4,8 @@
 #include <stddef.h>
 
 extern "C" {
+  void sqrt_array_ops(float* a, float* out, size_t size);
+  void neg_array_ops(float* a, float* out, size_t size);
   void exp_array_ops(float* a, float* out, size_t size);
   void log_array_ops(float* a, float* out, size_t size);
   void abs_array_ops(float* a, float* out, size_t size);
