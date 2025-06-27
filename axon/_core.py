@@ -97,11 +97,10 @@ class array:
   def __eq__(self, other) -> "array":
     if isinstance(other, (int, float)):
       # For scalar comparison, create a scalar array first
-      other = array([other], dtype=self._get_dtype_name())
+      other = array([other], dtype=self.dtype)
     else: other = other if isinstance(other, (CArray, array)) else array(other)
     out = array(lib.equal_array(self.data, other.data).contents, DType.BOOL)
     return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
 
   def log(self) -> "array":
     result_ptr = lib.log_array(self.data).contents
@@ -183,7 +182,7 @@ class array:
   def transpose(self) -> "array":
     assert self.ndim <= 3, ".transpose() only supported till 3-d arrays"
     out = array(lib.transpose_array(self.data).contents, self.dtype)
-    out.shape, out.size, out.ndim = ShapeHelp.transposed_shape(self.shape), self.size, self.ndim
+    out.shape, out.size, out.ndim = ShapeHelp.transpose_shape(self.shape), self.size, self.ndim
     out.strides = ShapeHelp.get_strides(out.shape)
     return out
 

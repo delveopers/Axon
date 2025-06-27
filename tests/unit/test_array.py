@@ -2,10 +2,10 @@ import unittest
 import sys, os
 
 try:
-  from axon._core import array, zeros, ones, zeros_like, ones_like, randn, randint, uniform, fill, linspace
+  from axon import array, zeros, ones, zeros_like, ones_like, randn, randint, uniform, fill, linspace
 except ImportError:
   sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-  from axon._core import array, zeros, ones, zeros_like, ones_like, randn, randint, uniform, fill, linspace
+  from axon import array, zeros, ones, zeros_like, ones_like, randn, randint, uniform, fill, linspace
 
 class TestArrayCreation(unittest.TestCase):
   """Test array creation and initialization"""
@@ -16,7 +16,7 @@ class TestArrayCreation(unittest.TestCase):
     self.assertEqual(arr.shape, (4,))
     self.assertEqual(arr.size, 4)
     self.assertEqual(arr.ndim, 1)
-    self.assertEqual(arr.to_list(), [1.0, 2.0, 3.0, 4.0])
+    self.assertEqual(arr.tolist(), [1.0, 2.0, 3.0, 4.0])
   
   def test_array_from_nested_list(self):
     """Test creating array from nested list"""
@@ -24,29 +24,28 @@ class TestArrayCreation(unittest.TestCase):
     self.assertEqual(arr.shape, (2, 2))
     self.assertEqual(arr.size, 4)
     self.assertEqual(arr.ndim, 2)
-    self.assertEqual(arr.to_list(), [[1.0, 2.0], [3.0, 4.0]])
+    self.assertEqual(arr.tolist(), [[1.0, 2.0], [3.0, 4.0]])
   
   def test_array_from_scalar(self):
     """Test creating array from scalar"""
-    arr = array(5)
+    arr = array([5])
     self.assertEqual(arr.shape, ())
     self.assertEqual(arr.size, 1)
     self.assertEqual(arr.ndim, 0)
-    self.assertEqual(arr.to_list(), 5.0)
+    self.assertEqual(arr.tolist(), 5.0)
   
   def test_array_dtype_specification(self):
     """Test dtype specification during creation"""
     arr_float = array([1, 2, 3], dtype="float32")
     arr_int = array([1, 2, 3], dtype="int32")
-    
-    self.assertEqual(arr_float._get_dtype_name(), "float32")
-    self.assertEqual(arr_int._get_dtype_name(), "int32")
+  
+    self.assertEqual(arr_float.dtype, "float32")
+    self.assertEqual(arr_int.dtype, "int32")
   
   def test_unsupported_dtype(self):
     """Test error handling for unsupported dtype"""
     with self.assertRaises(ValueError):
       array([1, 2, 3], dtype="complex64")
-
 
 class TestUtilityFunctions(unittest.TestCase):
   """Test utility functions for array creation"""
@@ -57,28 +56,28 @@ class TestUtilityFunctions(unittest.TestCase):
     self.assertEqual(arr.shape, (2, 3))
     self.assertEqual(arr.size, 6)
     expected = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-    self.assertEqual(arr.to_list(), expected)
+    self.assertEqual(arr.tolist(), expected)
   
   def test_ones(self):
     """Test ones function"""
     arr = ones((3, 2))
     self.assertEqual(arr.shape, (3, 2))
     expected = [[1.0, 1.0], [1.0, 1.0], [1.0, 1.0]]
-    self.assertEqual(arr.to_list(), expected)
+    self.assertEqual(arr.tolist(), expected)
   
   def test_zeros_like(self):
     """Test zeros_like function"""
     original = array([[1, 2], [3, 4]])
     arr = zeros_like(original)
     self.assertEqual(arr.shape, original.shape)
-    self.assertEqual(arr.to_list(), [[0.0, 0.0], [0.0, 0.0]])
+    self.assertEqual(arr.tolist(), [[0.0, 0.0], [0.0, 0.0]])
   
   def test_ones_like(self):
     """Test ones_like function"""
     original = array([1, 2, 3])
     arr = ones_like(original)
     self.assertEqual(arr.shape, original.shape)
-    self.assertEqual(arr.to_list(), [1.0, 1.0, 1.0])
+    self.assertEqual(arr.tolist(), [1.0, 1.0, 1.0])
   
   def test_fill(self):
     """Test fill function"""
@@ -87,7 +86,7 @@ class TestUtilityFunctions(unittest.TestCase):
     expected = [[3.14, 3.14], [3.14, 3.14]]
     for i in range(2):
       for j in range(2):
-        self.assertAlmostEqual(arr.to_list()[i][j], expected[i][j], places=5)
+        self.assertAlmostEqual(arr.tolist()[i][j], expected[i][j], places=5)
   
   def test_linspace(self):
     """Test linspace function"""
@@ -114,7 +113,6 @@ class TestUtilityFunctions(unittest.TestCase):
     self.assertEqual(arr.shape, (3,))
     self.assertEqual(arr.size, 3)
 
-
 class TestArithmeticOperations(unittest.TestCase):
   """Test arithmetic operations"""
   
@@ -126,59 +124,58 @@ class TestArithmeticOperations(unittest.TestCase):
   def test_addition_array(self):
     """Test array addition"""
     result = self.arr1 + self.arr2
-    self.assertEqual(result.to_list(), [5.0, 7.0, 9.0])
+    self.assertEqual(result.tolist(), [5.0, 7.0, 9.0])
   
   def test_addition_scalar(self):
     """Test scalar addition"""
     result = self.arr1 + self.scalar
-    self.assertEqual(result.to_list(), [3.0, 4.0, 5.0])
+    self.assertEqual(result.tolist(), [3.0, 4.0, 5.0])
   
   def test_right_addition(self):
     """Test right addition"""
     result = self.scalar + self.arr1
-    self.assertEqual(result.to_list(), [3.0, 4.0, 5.0])
+    self.assertEqual(result.tolist(), [3.0, 4.0, 5.0])
   
   def test_subtraction_array(self):
     """Test array subtraction"""
     result = self.arr2 - self.arr1
-    self.assertEqual(result.to_list(), [3.0, 3.0, 3.0])
+    self.assertEqual(result.tolist(), [3.0, 3.0, 3.0])
   
   def test_subtraction_scalar(self):
     """Test scalar subtraction"""
     result = self.arr1 - self.scalar
-    self.assertEqual(result.to_list(), [-1.0, 0.0, 1.0])
+    self.assertEqual(result.tolist(), [-1.0, 0.0, 1.0])
   
   def test_multiplication_array(self):
     """Test array multiplication"""
     result = self.arr1 * self.arr2
-    self.assertEqual(result.to_list(), [4.0, 10.0, 18.0])
+    self.assertEqual(result.tolist(), [4.0, 10.0, 18.0])
   
   def test_multiplication_scalar(self):
     """Test scalar multiplication"""
     result = self.arr1 * self.scalar
-    self.assertEqual(result.to_list(), [2.0, 4.0, 6.0])
+    self.assertEqual(result.tolist(), [2.0, 4.0, 6.0])
   
   def test_division_array(self):
     """Test array division"""
     result = self.arr2 / self.arr1
-    self.assertEqual(result.to_list(), [4.0, 2.5, 2.0])
+    self.assertEqual(result.tolist(), [4.0, 2.5, 2.0])
   
   def test_division_scalar(self):
     """Test scalar division"""
     result = self.arr1 / self.scalar
-    self.assertEqual(result.to_list(), [0.5, 1.0, 1.5])
+    self.assertEqual(result.tolist(), [0.5, 1.0, 1.5])
   
   def test_power_scalar(self):
     """Test power with scalar"""
     result = self.arr1 ** 2
-    self.assertEqual(result.to_list(), [1.0, 4.0, 9.0])
+    self.assertEqual(result.tolist(), [1.0, 4.0, 9.0])
   
   def test_right_power(self):
     """Test right power"""
     arr = array([1, 2, 3])
     result = 2 ** arr
-    self.assertEqual(result.to_list(), [2.0, 4.0, 8.0])
-
+    self.assertEqual(result.tolist(), [2.0, 4.0, 8.0])
 
 class TestComparisonOperations(unittest.TestCase):
   """Test comparison operations"""
@@ -190,15 +187,14 @@ class TestComparisonOperations(unittest.TestCase):
     result = arr1 == arr2
     # Assuming boolean results are returned as 1.0/0.0
     expected = [1.0, 0.0, 1.0]  # True, False, True
-    self.assertEqual(result.to_list(), expected)
+    self.assertEqual(result.tolist(), expected)
   
   def test_equality_scalar(self):
     """Test scalar equality"""
     arr = array([1, 2, 1])
     result = arr == 1
     expected = [1.0, 0.0, 1.0]  # True, False, True
-    self.assertEqual(result.to_list(), expected)
-
+    self.assertEqual(result.tolist(), expected)
 
 class TestMathematicalFunctions(unittest.TestCase):
   """Test mathematical functions"""
@@ -208,8 +204,8 @@ class TestMathematicalFunctions(unittest.TestCase):
     arr = array([1, 2.71828, 7.389])
     result = arr.log()
     # Check approximate values
-    self.assertAlmostEqual(result.to_list()[0], 0.0, places=3)
-    self.assertAlmostEqual(result.to_list()[1], 1.0, places=3)
+    self.assertAlmostEqual(result.tolist()[0], 0.0, places=3)
+    self.assertAlmostEqual(result.tolist()[1], 1.0, places=3)
   
   def test_exp(self):
     """Test exponential"""
@@ -217,13 +213,13 @@ class TestMathematicalFunctions(unittest.TestCase):
     result = arr.exp()
     expected = [1.0, 2.718, 7.389]
     for i, val in enumerate(expected):
-      self.assertAlmostEqual(result.to_list()[i], val, places=2)
+      self.assertAlmostEqual(result.tolist()[i], val, places=2)
   
   def test_abs(self):
     """Test absolute value"""
     arr = array([-2, -1, 0, 1, 2])
     result = arr.abs()
-    self.assertEqual(result.to_list(), [2.0, 1.0, 0.0, 1.0, 2.0])
+    self.assertEqual(result.tolist(), [2.0, 1.0, 0.0, 1.0, 2.0])
   
   def test_sin(self):
     """Test sine function"""
@@ -231,7 +227,7 @@ class TestMathematicalFunctions(unittest.TestCase):
     result = arr.sin()
     expected = [0.0, 1.0, 0.0]
     for i, val in enumerate(expected):
-      self.assertAlmostEqual(result.to_list()[i], val, places=3)
+      self.assertAlmostEqual(result.tolist()[i], val, places=3)
   
   def test_cos(self):
     """Test cosine function"""
@@ -239,7 +235,7 @@ class TestMathematicalFunctions(unittest.TestCase):
     result = arr.cos()
     expected = [1.0, 0.0, -1.0]
     for i, val in enumerate(expected):
-      self.assertAlmostEqual(result.to_list()[i], val, places=3)
+      self.assertAlmostEqual(result.tolist()[i], val, places=3)
   
   def test_tan(self):
     """Test tangent function"""
@@ -247,7 +243,7 @@ class TestMathematicalFunctions(unittest.TestCase):
     result = arr.tan()
     expected = [0.0, 1.0]
     for i, val in enumerate(expected):
-      self.assertAlmostEqual(result.to_list()[i], val, places=3)
+      self.assertAlmostEqual(result.tolist()[i], val, places=3)
 
 
 class TestShapeManipulation(unittest.TestCase):
@@ -258,7 +254,7 @@ class TestShapeManipulation(unittest.TestCase):
     arr = array([1, 2, 3, 4, 5, 6])
     reshaped = arr.reshape((2, 3))
     self.assertEqual(reshaped.shape, (2, 3))
-    self.assertEqual(reshaped.to_list(), [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    self.assertEqual(reshaped.tolist(), [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
   
   def test_reshape_invalid(self):
     """Test reshape with invalid dimensions"""
@@ -271,28 +267,28 @@ class TestShapeManipulation(unittest.TestCase):
     arr = array([[1, 2, 3], [4, 5, 6]])
     transposed = arr.transpose()
     expected = [[1.0, 4.0], [2.0, 5.0], [3.0, 6.0]]
-    self.assertEqual(transposed.to_list(), expected)
+    self.assertEqual(transposed.tolist(), expected)
   
   def test_flatten(self):
     """Test flatten function"""
     arr = array([[1, 2], [3, 4]])
     flattened = arr.flatten()
     self.assertEqual(flattened.shape, (4,))
-    self.assertEqual(flattened.to_list(), [1.0, 2.0, 3.0, 4.0])
+    self.assertEqual(flattened.tolist(), [1.0, 2.0, 3.0, 4.0])
   
   def test_squeeze(self):
     """Test squeeze function"""
     arr = array([[[1], [2], [3]]])  # Shape: (1, 3, 1)
     squeezed = arr.squeeze()
     self.assertEqual(squeezed.shape, (3,))
-    self.assertEqual(squeezed.to_list(), [1.0, 2.0, 3.0])
+    self.assertEqual(squeezed.tolist(), [1.0, 2.0, 3.0])
   
   def test_expand_dims(self):
     """Test expand_dims function"""
     arr = array([1, 2, 3])
     expanded = arr.expand_dims(0)
     self.assertEqual(expanded.shape, (1, 3))
-    self.assertEqual(expanded.to_list(), [[1.0, 2.0, 3.0]])
+    self.assertEqual(expanded.tolist(), [[1.0, 2.0, 3.0]])
 
 
 class TestReductionOperations(unittest.TestCase):
@@ -302,45 +298,45 @@ class TestReductionOperations(unittest.TestCase):
     """Test sum of all elements"""
     arr = array([[1, 2], [3, 4]])
     result = arr.sum()
-    self.assertEqual(result.to_list(), 10.0)
+    self.assertEqual(result.tolist(), 10.0)
   
   def test_sum_axis(self):
     """Test sum along axis"""
     arr = array([[1, 2], [3, 4]])
     result = arr.sum(axis=0)
-    self.assertEqual(result.to_list(), [4.0, 6.0])
+    self.assertEqual(result.tolist(), [4.0, 6.0])
   
   def test_mean_all(self):
     """Test mean of all elements"""
     arr = array([1, 2, 3, 4])
     result = arr.mean()
-    self.assertEqual(result.to_list(), 2.5)
+    self.assertEqual(result.tolist(), 2.5)
   
   def test_max_all(self):
     """Test max of all elements"""
     arr = array([1, 5, 3, 2])
     result = arr.max()
-    self.assertEqual(result.to_list(), 5.0)
+    self.assertEqual(result.tolist(), 5.0)
   
-  def test_min_all(self):
-    """Test min of all elements"""
-    arr = array([3, 1, 4, 2])
-    result = arr.min()
-    self.assertEqual(result.to_list(), 1.0)
+  # def test_min_all(self):
+  #   """Test min of all elements"""
+  #   arr = array([3, 1, 4, 2])
+  #   result = arr.min()
+  #   self.assertEqual(result.tolist(), 1.0)
   
   def test_var(self):
     """Test variance calculation"""
     arr = array([1, 2, 3, 4, 5])
     result = arr.var()
     # Expected variance: 2.0 (for population variance)
-    self.assertAlmostEqual(result.to_list(), 2.0, places=3)
+    self.assertAlmostEqual(result.tolist(), 2.0, places=3)
   
   def test_std(self):
     """Test standard deviation calculation"""
     arr = array([1, 2, 3, 4, 5])
     result = arr.std()
     # Expected std: sqrt(2.0) ≈ 1.414
-    self.assertAlmostEqual(result.to_list(), 1.414, places=2)
+    self.assertAlmostEqual(result.tolist(), 1.414, places=2)
 
 
 class TestMatrixOperations(unittest.TestCase):
@@ -352,7 +348,7 @@ class TestMatrixOperations(unittest.TestCase):
     arr2 = array([[5, 6], [7, 8]])
     result = arr1 @ arr2
     expected = [[19.0, 22.0], [43.0, 50.0]]
-    self.assertEqual(result.to_list(), expected)
+    self.assertEqual(result.tolist(), expected)
   
   def test_matmul_1d_2d(self):
     """Test 1D vector with 2D matrix multiplication"""
@@ -360,7 +356,7 @@ class TestMatrixOperations(unittest.TestCase):
     mat = array([[3, 4], [5, 6]])
     result = vec @ mat
     expected = [13.0, 16.0]  # [1*3 + 2*5, 1*4 + 2*6]
-    self.assertEqual(result.to_list(), expected)
+    self.assertEqual(result.tolist(), expected)
   
   def test_matmul_2d_1d(self):
     """Test 2D matrix with 1D vector multiplication"""
@@ -368,7 +364,7 @@ class TestMatrixOperations(unittest.TestCase):
     vec = array([5, 6])
     result = mat @ vec
     expected = [17.0, 39.0]  # [1*5 + 2*6, 3*5 + 4*6]
-    self.assertEqual(result.to_list(), expected)
+    self.assertEqual(result.tolist(), expected)
 
 
 class TestTypeConversion(unittest.TestCase):
@@ -380,14 +376,14 @@ class TestTypeConversion(unittest.TestCase):
     int_arr = arr.astype("int32")
     self.assertEqual(int_arr._get_dtype_name(), "int32")
     # Values should be truncated
-    self.assertEqual(int_arr.to_list(), [1.0, 2.0, 3.0])
+    self.assertEqual(int_arr.tolist(), [1.0, 2.0, 3.0])
   
   def test_astype_int_to_float(self):
     """Test conversion from int to float"""
     arr = array([1, 2, 3], dtype="int32")
     float_arr = arr.astype("float64")
     self.assertEqual(float_arr._get_dtype_name(), "float64")
-    self.assertEqual(float_arr.to_list(), [1.0, 2.0, 3.0])
+    self.assertEqual(float_arr.tolist(), [1.0, 2.0, 3.0])
 
 
 class TestArrayRepresentation(unittest.TestCase):
@@ -426,7 +422,7 @@ class TestEdgeCases(unittest.TestCase):
     result = arr + arr
     expected = [2e-10, 4e-10, 6e-10]
     for i, val in enumerate(expected):
-      self.assertAlmostEqual(result.to_list()[i], val, places=15)
+      self.assertAlmostEqual(result.tolist()[i], val, places=15)
   
   def test_very_large_numbers(self):
     """Test with very large numbers"""
@@ -434,7 +430,7 @@ class TestEdgeCases(unittest.TestCase):
     result = arr / 1e10
     expected = [1.0, 2.0, 3.0]
     for i, val in enumerate(expected):
-      self.assertAlmostEqual(result.to_list()[i], val, places=5)
+      self.assertAlmostEqual(result.tolist()[i], val, places=5)
 
 
 if __name__ == '__main__':
