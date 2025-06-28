@@ -436,7 +436,6 @@ Array* min_array(Array* a, int axis, bool keepdims) {
   Array* result = create_array(out, ndim, shape, out_size, result_dtype);
   free(a_float);
   free(out);
-  free(out);
   if (shape) free(shape);
   return result;
 }
