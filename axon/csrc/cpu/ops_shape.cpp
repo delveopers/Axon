@@ -2,17 +2,9 @@
 #include <stddef.h>
 #include "ops_shape.h"
 
-void reassign_array_ops(float* a, float* out, size_t size) {
-  for (int i = 0; i < size; i++) { out[i] = a[i]; }
-}
-
-void equal_array_ops(float* a, float* b, float* out, size_t size) {
-  for (int i = 0; i < size; i++) { out[i] = (a[i] == b[i]) ? 1 : 0;}
-}
-
-void transpose_1d_array_ops(float* a, float* out, int* shape) {
-  for (int i = 0; i < shape[0]; i++) { out[i] = a[i]; }
-}
+void reassign_array_ops(float* a, float* out, size_t size) { for (int i = 0; i < size; i++) { out[i] = a[i]; } }
+void equal_array_ops(float* a, float* b, float* out, size_t size) { for (int i = 0; i < size; i++) { out[i] = (a[i] == b[i]) ? 1 : 0;} }
+void transpose_1d_array_ops(float* a, float* out, int* shape) { for (int i = 0; i < shape[0]; i++) { out[i] = a[i]; } }
 
 void transpose_2d_array_ops(float* a, float* out, int* shape) {
   int rows = shape[0], cols = shape[1];

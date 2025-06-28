@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include "redux_ops.h"
-#include "cpu/ops_redux.h"
+#include "../cpu/ops_redux.h"
 
 Array* sum_array(Array* a, int axis, bool keepdims) {
   if (a == NULL) {
@@ -435,7 +435,6 @@ Array* min_array(Array* a, int axis, bool keepdims) {
   dtype_t result_dtype = a->dtype;  // preserve original dtype
   Array* result = create_array(out, ndim, shape, out_size, result_dtype);
   free(a_float);
-  free(out);
   free(out);
   if (shape) free(shape);
   return result;

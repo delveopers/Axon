@@ -44,75 +44,39 @@ void fill_randint(float* out, int low, int high, size_t size) {
   // allocating temporary integer array
   int* temp = (int*)malloc(sizeof(int) * size);
   if (!temp) return;
-
   rng_randint(&global_rng, temp, size, low, high);  
-  // converting integers to floats
-  for (size_t i = 0; i < size; i++) {
-    out[i] = (float)temp[i];
-  }
+  for (size_t i = 0; i < size; i++) { out[i] = (float)temp[i]; }  // converting integers to floats
   free(temp);
 }
 
 void ones_like_array_ops(float* out, size_t size) {
   if (!out) return;
-  for (size_t i = 0; i < size; i++) {
-    out[i] = 1.0f;
-  }
-}
+  for (size_t i = 0; i < size; i++) { out[i] = 1.0f; } }
 
 void zeros_like_array_ops(float* out, size_t size) {
   if (!out) return;
   // using memset for better performance on large arrays
-  if (size > 1000) {
-    memset(out, 0, size * sizeof(float));
-  } else {
-    for (size_t i = 0; i < size; i++) {
-      out[i] = 0.0f;
-    }
-  }
-}
+  if (size > 1000) { memset(out, 0, size * sizeof(float)); }
+  else { for (size_t i = 0; i < size; i++) { out[i] = 0.0f; } } }
 
 void ones_array_ops(float* out, size_t size) {
   if (!out) return;
-  for (size_t i = 0; i < size; i++) {
-    out[i] = 1.0f;
-  }
-}
+  for (size_t i = 0; i < size; i++) { out[i] = 1.0f; } }
 
 void zeros_array_ops(float* out, size_t size) {
   if (!out) return;
   // using memset for better performance on large arrays
-  if (size > 1000) {
-    memset(out, 0, size * sizeof(float));
-  } else {
-    for (size_t i = 0; i < size; i++) {
-      out[i] = 0.0f;
-    }
-  }
-}
+  if (size > 1000) { memset(out, 0, size * sizeof(float)); }
+  else { for (size_t i = 0; i < size; i++) { out[i] = 0.0f; } } }
 
 void fill_array_ops(float* out, float value, size_t size) {
   if (!out) return;
-
   // optimized filling for special values
-  if (value == 0.0f) {
-    zeros_array_ops(out, size);
-    return;
-  }
-  if (value == 1.0f) {
-    ones_array_ops(out, size);
-    return;
-  }
-
+  if (value == 0.0f) { zeros_array_ops(out, size); return; }
+  if (value == 1.0f) { ones_array_ops(out, size); return; }
   // general case
-  for (size_t i = 0; i < size; i++) {
-    out[i] = value;
-  }
-}
+  for (size_t i = 0; i < size; i++) { out[i] = value; } }
 
 void linspace_array_ops(float* out, float start, float step_size, size_t size) {
   if (!out) return;
-  for (size_t i = 0; i < size; i++) {
-    out[i] = start + (float)i * step_size;
-  }
-}
+  for (size_t i = 0; i < size; i++) { out[i] = start + (float)i * step_size; } }

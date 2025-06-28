@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "utils.h"
-#include "cpu/helpers.h"
-#include "inc/random.h"
+#include "../cpu/helpers.h"
+#include "../inc/random.h"
 
 Array* zeros_like_array(Array* a) {
   float* out = (float*)malloc(a->size * sizeof(float));
