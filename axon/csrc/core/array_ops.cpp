@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "array_ops.h"
-#include "cpu/ops_array.h"
+#include "../cpu/ops_array.h"
 
 Array* matmul_array(Array* a, Array* b) {
   if (a == NULL || b == NULL) {

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "cpu/ops_shape.h"
+#include "../cpu/ops_shape.h"
 #include "shape_ops.h"
 
 Array* transpose_array(Array* a) {
