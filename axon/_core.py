@@ -123,6 +123,11 @@ class array:
     out = array(result_ptr, self.dtype)
     return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
 
+  def sign(self) -> "array":
+    result_ptr = lib.sign_array(self.data).contents
+    out = array(result_ptr, self.dtype)
+    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
+
   def __matmul__(self, other):
     other = other if isinstance(other, (CArray, array)) else array(other, self.dtype)
     if self.ndim <= 2 and other.ndim <= 2:
@@ -218,7 +223,6 @@ class array:
     return out
 
   def flatten(self) -> "array":
-    """Return a copy of the array collapsed into one dimension"""
     result_ptr = lib.flatten_array(self.data).contents
     out = array(result_ptr, self.dtype)
     out.shape = (self.size,)

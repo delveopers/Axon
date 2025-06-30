@@ -17,6 +17,7 @@ extern "C" {
   Array* abs_array(Array* a);
   Array* neg_array(Array* a);
   Array* sqrt_array(Array* a);
+  Array* sign_array(Array* a);
 }
 
 #endif  //!__UNARY_OPS__H__

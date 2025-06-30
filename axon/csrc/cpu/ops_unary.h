@@ -9,6 +9,7 @@ extern "C" {
   void exp_array_ops(float* a, float* out, size_t size);
   void log_array_ops(float* a, float* out, size_t size);
   void abs_array_ops(float* a, float* out, size_t size);
+  void sign_array_ops(float* a, float* out, size_t size);
 
   void sin_ops(float* a, float* out, size_t size);
   void cos_ops(float* a, float* out, size_t size);
