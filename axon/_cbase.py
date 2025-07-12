@@ -7,7 +7,7 @@ def _get_lib_path():
   possible_names = ['array', 'libarray']
   possible_exts = ['.pyd', '.dll', '.so', '.dylib', sysconfig.get_config_var('EXT_SUFFIX') or '']
   search_dirs = [pkg_dir, os.path.join(pkg_dir, 'lib'), os.path.join(pkg_dir, '..', 'build')]
-  
+
   for search_dir in search_dirs:
     if not os.path.exists(search_dir): continue
     for root, dirs, files in os.walk(search_dir):
@@ -19,22 +19,16 @@ def _get_lib_path():
   raise FileNotFoundError(f"Could not find array library in {search_dirs}. Available files: {[f for d in search_dirs if os.path.exists(d) for f in os.listdir(d)]}")
 
 lib = ctypes.CDLL(_get_lib_path())
-
-class DType:
-  FLOAT32, FLOAT64, INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64, BOOL = range(11)
-
-class DTypeValue(ctypes.Union):
-  _fields_ = [("f32", c_float), ("f64", c_double), ("i8", c_int8), ("i16", c_int16), ("i32", c_int32), ("i64", c_int64), ("u8", c_uint8), ("u16", c_uint16), ("u32", c_uint32), ("u64", c_uint64), ("boolean", c_uint8)]
-
-class CArray(Structure):
-  _fields_ = [("data", c_void_p), ("strides", POINTER(c_int)), ("backstrides", POINTER(c_int)), ("shape", POINTER(c_int)), ("size", c_size_t), ("ndim", c_size_t), ("dtype", c_int), ("is_view", c_int)]
+class DType: FLOAT32, FLOAT64, INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64, BOOL = range(11)
+class DTypeValue(ctypes.Union): _fields_ = [("f32", c_float), ("f64", c_double), ("i8", c_int8), ("i16", c_int16), ("i32", c_int32), ("i64", c_int64), ("u8", c_uint8), ("u16", c_uint16), ("u32", c_uint32), ("u64", c_uint64), ("boolean", c_uint8)]
+class CArray(Structure): _fields_ = [("data", c_void_p), ("strides", POINTER(c_int)), ("backstrides", POINTER(c_int)), ("shape", POINTER(c_int)), ("size", c_size_t), ("ndim", c_size_t), ("dtype", c_int), ("is_view", c_int)]
 
 def _setup_func(name, argtypes, restype):
   func = getattr(lib, name)
   func.argtypes, func.restype = argtypes, restype
   return func
 
-_funcs = {
+_array_funcs = {
   'create_array': ([POINTER(c_float), c_size_t, POINTER(c_int), c_size_t, c_int], POINTER(CArray)),
   'delete_array': ([POINTER(CArray)], None), 'delete_data': ([POINTER(CArray)], None),
   'delete_shape': ([POINTER(CArray)], None), 'delete_strides': ([POINTER(CArray)], None),
@@ -72,6 +66,9 @@ _funcs = {
   'sum_array': ([POINTER(CArray), c_int, ctypes.c_bool], POINTER(CArray)), 'min_array': ([POINTER(CArray), c_int, ctypes.c_bool], POINTER(CArray)),
   'max_array': ([POINTER(CArray), c_int, ctypes.c_bool], POINTER(CArray)), 'mean_array': ([POINTER(CArray), c_int, ctypes.c_bool], POINTER(CArray)),
   'var_array': ([POINTER(CArray), c_int, c_int], POINTER(CArray)), 'std_array': ([POINTER(CArray), c_int, c_int], POINTER(CArray)),
+}
+
+_utils_funcs = {
   'zeros_like_array': ([POINTER(CArray)], POINTER(CArray)), 'ones_like_array': ([POINTER(CArray)], POINTER(CArray)),
   'zeros_array': ([POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)), 'ones_array': ([POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)),
   'randn_array': ([POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)), 'randint_array': ([c_int, c_int, POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)),
@@ -79,4 +76,15 @@ _funcs = {
   'linspace_array': ([c_float, c_float, c_float, POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray))
 }
 
-for name, (argtypes, restype) in _funcs.items(): _setup_func(name, argtypes, restype)
+_vector_funcs = {
+  'vector_dot': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'vector_matrix_dot': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'vector_inner': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'vector_outer': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'vector_cross': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'vector_cross_axis': ([POINTER(CArray), POINTER(CArray), c_int], POINTER(CArray)),
+  'linear_1d_array': ([POINTER(CArray), POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'linear_2d_array': ([POINTER(CArray), POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'linear_transform_array': ([POINTER(CArray), POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'det_array': ([POINTER(CArray)], POINTER(CArray)), 'batched_det_array': ([POINTER(CArray)], POINTER(CArray)),
+}
+
+for name, (argtypes, restype) in _array_funcs.items(): _setup_func(name, argtypes, restype)
+for name, (argtypes, restype) in _utils_funcs.items(): _setup_func(name, argtypes, restype)
+for name, (argtypes, restype) in _vector_funcs.items(): _setup_func(name, argtypes, restype)

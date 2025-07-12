@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../cpu/ops_unary.h"
+#include "cpu/ops_unary.h"
 #include "unary_ops.h"
 
 Array* sin_array(Array* a) {
