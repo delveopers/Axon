@@ -1,8 +1,8 @@
 #ifndef __DECOMPOSE__H__
 #define __DECOMPOSE__H__
 
-#include "../core/core/core.h"
-#include "../core/core/dtype.h"
+#include "../core/core.h"
+#include "../core/dtype.h"
 
 extern "C" {
   Array* det_array(Array* a);

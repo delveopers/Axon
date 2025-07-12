@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "transform.h"
-#include "../core/core/dtype.h"
+#include "../core/dtype.h"
 #include "../cpu/ops_array.h"
 #include "../cpu/ops_shape.h"
 

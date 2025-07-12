@@ -1,7 +1,7 @@
 #ifndef __TRANSFORM__H__
 #define __TRANSFORM__H__
 
-#include "../core/core/core.h"
+#include "../core/core.h"
 
 extern "C" {
   Array* linear_1d_array(Array* weight, Array* input, Array* bias);

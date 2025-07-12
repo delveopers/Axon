@@ -1,8 +1,8 @@
 #ifndef __VECTOR__H__
 #define __VECTOR__H__
 
-#include "../core/core/core.h"
-#include "../core/core/dtype.h"
+#include "../core/core.h"
+#include "../core/dtype.h"
 
 extern "C" {
   Array* vector_dot(Array* a, Array* b);
