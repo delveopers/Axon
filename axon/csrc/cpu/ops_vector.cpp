@@ -30,40 +30,45 @@ void vector_outer_product_ops(float* a, float* b, float* out, size_t size_n, siz
 }
 
 void cross_product_ops(float* a, float* b, float* out, size_t* shape, size_t ndim, size_t axis, size_t* a_stride, size_t* b_stride) {
-  if (axis < 0) { axis = ndim + axis; }
-  size_t axis_size = shape[axis];   // Get the size of the cross product axis
-  size_t total_elements = 1;  // calculate total number of cross products to compute
-  for (size_t i = 0; i < ndim; i++) { total_elements *= shape[i]; }
-  size_t num_cross_products = total_elements / axis_size;
+  size_t axis_size = shape[axis];
+  // Calculate total number of elements excluding the axis dimension
+  size_t total_elements = 1;
+  for (size_t i = 0; i < ndim; i++) { if (i != axis) { total_elements *= shape[i]; } }
   if (axis_size == 2) {
-    for (size_t i = 0; i < num_cross_products; i++) {
-      size_t base_idx = 0, temp_i = i;
+    // 2D cross product: returns scalar for each cross product
+    for (size_t i = 0; i < total_elements; i++) {
+      // Convert flat index to multi-dimensional coordinates
+      size_t temp_i = i, a_idx = 0, b_idx = 0;
       for (size_t dim = 0; dim < ndim; dim++) {
         if (dim != axis) {
-          size_t dim_size = shape[dim]; size_t coord = temp_i % dim_size;
-          temp_i /= dim_size; base_idx += coord * a_stride[dim];
+          size_t dim_size = shape[dim];
+          size_t coord = temp_i % dim_size;
+          temp_i /= dim_size;
+          a_idx += coord * a_stride[dim];
+          b_idx += coord * b_stride[dim];
         }
       }
-      float a0 = a[base_idx]; float a1 = a[base_idx + a_stride[axis]];
-      float b0 = b[base_idx]; float b1 = b[base_idx + b_stride[axis]];
-      out[i] = a0 * b1 - a1 * b0;       // 2D cross product: a0 x b1 - a1 x b0
+      float a0 = a[a_idx], a1 = a[a_idx + a_stride[axis]];
+      float b0 = b[b_idx], b1 = b[b_idx + b_stride[axis]];
+      out[i] = a0 * b1 - a1 * b0;
     }
   }
-  // Handle 3D cross product (returns vector)
   else if (axis_size == 3) {
-    for (size_t i = 0; i < num_cross_products; i++) {
-      size_t base_idx = 0;
-      size_t temp_i = i;
+    // 3D cross product: returns 3-element vector for each cross product
+    for (size_t i = 0; i < total_elements; i++) {
+      size_t temp_i = i, a_idx = 0, b_idx = 0;
       for (size_t dim = 0; dim < ndim; dim++) {
         if (dim != axis) {
-          size_t dim_size = shape[dim]; size_t coord = temp_i % dim_size;
-          temp_i /= dim_size; base_idx += coord * a_stride[dim];
+          size_t dim_size = shape[dim];
+          size_t coord = temp_i % dim_size;
+          temp_i /= dim_size;
+          a_idx += coord * a_stride[dim];
+          b_idx += coord * b_stride[dim];
         }
       }
 
-      float a0 = a[base_idx]; float a1 = a[base_idx + a_stride[axis]]; float a2 = a[base_idx + 2 * a_stride[axis]];
-      float b0 = b[base_idx]; float b1 = b[base_idx + b_stride[axis]]; float b2 = b[base_idx + 2 * b_stride[axis]];
-      // 3D cross product: [a1 x b2 - a2 x b1, a2 x b0 - a0 x b2, a0 x b1 - a1 x b0]
+      float a0 = a[a_idx]; float a1 = a[a_idx + a_stride[axis]]; float a2 = a[a_idx + 2 * a_stride[axis]];
+      float b0 = b[b_idx]; float b1 = b[b_idx + b_stride[axis]]; float b2 = b[b_idx + 2 * b_stride[axis]];
       out[i * 3 + 0] = a1 * b2 - a2 * b1;
       out[i * 3 + 1] = a2 * b0 - a0 * b2;
       out[i * 3 + 2] = a0 * b1 - a1 * b0;

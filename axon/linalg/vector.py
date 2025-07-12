@@ -32,10 +32,14 @@ def outer(a: array, b: array, dtype: DType = 'float32') -> array:
 
 def cross(a: array, b: array, axis: int=None, dtype: DType = 'float32') -> array:
   a, b = a if isinstance(a, array) else array(a, 'float32'), b if isinstance(b, array) else array(b, 'float32')
-  if axis is None:    
+  if a.ndim == 1 and b.ndim == 1:
     ptr = lib.vector_cross(a.data, b.data).contents
-  else:
+  elif a.ndim == 2 and b.ndim == 2 or a.ndim == 3 and b.ndim == 3:
+    if axis == None: raise ValueError("Axis value can't be NULL, need an axis value")
+    if axis > a.ndim or axis > b.ndim: raise IndexError(f"Can't exceed the ndim. Axis >= ndim in this case: {axis} >= {a.ndim}")
     ptr = lib.vector_cross_axis(a.data, b.data, c_int(axis)).contents
+  else:
+    raise ValueError(".cross() only supported for 1D, 2D, and 3D vectors")
   out = array(ptr, dtype if dtype is not None else a.dtype)
   out_shape, out_size, out_ndim, out_strides = a.shape, a.size, a.ndim, a.strides
   return (setattr(out, "shape", out_shape), setattr(out, "ndim", out_ndim), setattr(out, "size", out_size), setattr(out, "strides", out_strides), out)[4]
