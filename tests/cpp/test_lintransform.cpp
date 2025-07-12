@@ -1,11 +1,11 @@
-// g++ -o run test.cpp ../core/core/core.cpp ../core/core/dtype.cpp ../core/core/contiguous.cpp ../cpu/ops_array.cpp ../cpu/ops_shape.cpp transform.cpp
+// g++ -o run test.cpp ../core/core.cpp ../core/dtype.cpp ../core/contiguous.cpp ../cpu/ops_array.cpp ../cpu/ops_shape.cpp transform.cpp
 
 #include <stdio.h>
 #include <stdlib.h>
 #include "transform.h"
-#include "../core/core/core.h"
-#include "../core/core/dtype.h"
-#include "../core/array_ops.h"
+#include "../core/core.h"
+#include "../core/dtype.h"
+#include "../array_ops.h"
 
 int main() {
   printf("Testing Linear Transform Functions\n");

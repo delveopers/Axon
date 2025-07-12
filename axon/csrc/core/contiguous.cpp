@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <string.h>
 #include "contiguous.h"
-#include "../../cpu/helpers.h"
+#include "../cpu/helpers.h"
 
 int is_contiguous(Array* self) {
   if (self == NULL || self->ndim == 0) return 1;
