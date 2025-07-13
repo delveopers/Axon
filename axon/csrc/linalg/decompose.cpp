@@ -13,23 +13,32 @@ Array* det_array(Array* a) {
     exit(EXIT_FAILURE);
   }
   if (a->shape[0] != a->shape[1]) {
-    fprintf(stderr, "Array must be square to compute det(). dim0 '%d' != dim1 '%d\n", a->shape[0], a->shape[1]);
+    fprintf(stderr, "Array must be square to compute det(). dim0 '%d' != dim1 '%d'\n", a->shape[0], a->shape[1]);
     exit(EXIT_FAILURE);
   }
+
   int* shape = (int*)malloc(1 * sizeof(int));
+  if (!shape) {
+    fprintf(stderr, "Memory allocation failed for shape\n");
+    exit(EXIT_FAILURE);
+  }
   shape[0] = 1;
   float* a_float = convert_to_float32(a->data, a->dtype, a->size);
   float* out = (float*)malloc(1 * sizeof(float));
   if (a_float == NULL || out == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion");
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
     if (a_float) free(a_float);
     if (out) free(out);
+    if (shape) free(shape);
     exit(EXIT_FAILURE);
   }
 
-  det_ops_array(a_float, out, a->size);
+  // Passing matrix dimension (shape[0]), not total size
+  det_ops_array(a_float, out, a->shape[0]);
   Array* result = create_array(out, 1, shape, 1, a->dtype);
-  free(a_float); free(out); free(shape);
+  free(a_float); 
+  free(out); 
+  free(shape);
   return result;
 }
 
@@ -43,22 +52,31 @@ Array* batched_det_array(Array* a) {
     exit(EXIT_FAILURE);
   }
   if (a->shape[1] != a->shape[2]) {
-    fprintf(stderr, "Array must be square to compute det(). dim0 '%d' != dim1 '%d\n", a->shape[0], a->shape[1]);
-    exit(EXIT_FAILURE);
-  }
-  int* shape = (int*)malloc(2 * sizeof(int));
-  shape[0] = 1, shape[1] = 1;
-  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
-  float* out = (float*)malloc(2 * sizeof(float));
-  if (a_float == NULL || out == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion");
-    if (a_float) free(a_float);
-    if (out) free(out);
+    fprintf(stderr, "Array must be square to compute det(). dim1 '%d' != dim2 '%d'\n", a->shape[1], a->shape[2]);
     exit(EXIT_FAILURE);
   }
 
-  batched_det_ops(a_float, out, a->size, a->shape[0]);
-  Array* result = create_array(out, 1, shape, 2, a->dtype);
-  free(a_float); free(out); free(shape);
+  int* shape = (int*)malloc(1 * sizeof(int));
+  if (!shape) {
+    fprintf(stderr, "Memory allocation failed for shape\n");
+    exit(EXIT_FAILURE);
+  }
+  shape[0] = a->shape[0]; // Output should have batch size
+  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
+  float* out = (float*)malloc(a->shape[0] * sizeof(float)); // allocating for batch size
+  if (a_float == NULL || out == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    if (out) free(out);
+    if (shape) free(shape);
+    exit(EXIT_FAILURE);
+  }
+
+  // Pass matrix dimension (shape[1])
+  batched_det_ops(a_float, out, a->shape[1], a->shape[0]);
+  Array* result = create_array(out, 1, shape, a->shape[0], a->dtype);
+  free(a_float); 
+  free(out); 
+  free(shape);
   return result;
 }
