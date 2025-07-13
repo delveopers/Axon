@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../cpu/ops_unary.h"
+#include "cpu/ops_unary.h"
 #include "unary_ops.h"
 
 Array* sin_array(Array* a) {
@@ -331,6 +331,30 @@ Array* sqrt_array(Array* a) {
     result_dtype = a->dtype; // keep float32 or float64
   }
   Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
+  free(a_float);
+  free(out);
+  return result;
+}
+
+Array* sign_array(Array* a) {
+  if (a == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
+  if (a_float == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    exit(EXIT_FAILURE);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    free(a_float);
+    exit(EXIT_FAILURE);
+  }
+
+  sign_array_ops(a_float, out, a->size);
+  Array* result = create_array(out, a->ndim, a->shape, a->size, a->dtype);
   free(a_float);
   free(out);
   return result;

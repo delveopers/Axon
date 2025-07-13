@@ -30,6 +30,9 @@ wheel.expand-macos-universal-tags = true
 wheel.install-dir = "axon"
 install.components = ["python_modules"]
 
+[tool.scikit-build.wheel]
+packages = ["axon", "axon.linalg", "axon.dataset"]
+
 [tool.scikit-build.cmake.define]
 CMAKE_EXPORT_COMPILE_COMMANDS = "ON"
 BUILD_SHARED_LIBS = "ON"

@@ -28,6 +28,7 @@ void matmul_array_ops(float* a, float* b, float* out, int* shape_a, int* shape_b
       out[i * cols_b + j] = sum;
     }
   }
+  free(b_transposed);
 }
 
 // batch matrix multiplication: batched A @ batched B
