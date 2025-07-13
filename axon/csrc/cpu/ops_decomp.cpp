@@ -50,235 +50,284 @@ void batched_det_ops(float* a, float* out, size_t size, size_t batch) {
   }
 }
 
-// qr decomposition helper for eigenvalue computation
+// improved qr decomposition using householder reflections
 static void qr_decomp(float* a, float* q, float* r, size_t n) {
   size_t i, j, k;
-  float norm, sum;
+  float *v, *w, norm, tau, sum;
+  size_t mat_size = n * n;
+  // allocate working memory
+  v = (float*)malloc(n * sizeof(float)), w = (float*)malloc(n * sizeof(float));
+  if (!v || !w) { 
+    free(v); free(w); 
+    return; 
+  }
   // initialize q as identity, r as copy of a
-  for (i = 0; i < n * n; ++i) { q[i] = 0.0f; r[i] = a[i]; }
+  for (i = 0; i < mat_size; ++i) { q[i] = 0.0f; r[i] = a[i]; }
   for (i = 0; i < n; ++i) q[i * n + i] = 1.0f;
-  // gram-schmidt process
-  for (j = 0; j < n; ++j) {
-    norm = 0.0f;  // computing norm of column j
-    for (i = 0; i < n; ++i) norm += r[i * n + j] * r[i * n + j];
+  // householder qr decomposition
+  for (k = 0; k < n - 1; ++k) {
+    // compute householder vector for column k
+    norm = 0.0f;
+    for (i = k; i < n; ++i) {
+      v[i] = r[i * n + k];
+      norm += v[i] * v[i];
+    }
     norm = sqrtf(norm);
     if (norm < 1e-10f) continue;
-    for (i = 0; i < n; ++i) {     // normalize column j
-      q[i * n + j] = r[i * n + j] / norm;
-      r[i * n + j] = (i == j) ? norm : 0.0f;
-    }   
-    // orthogonalize remaining columns
-    for (k = j + 1; k < n; ++k) {
+    // adjust sign to avoid cancellation
+    if (v[k] >= 0.0f) norm = -norm;
+    v[k] -= norm;
+    // compute tau
+    tau = 0.0f;
+    for (i = k; i < n; ++i) tau += v[i] * v[i];
+    if (tau < 1e-10f) continue;
+    tau = 2.0f / tau;
+    // apply householder transformation to r
+    for (j = k; j < n; ++j) {
       sum = 0.0f;
-      for (i = 0; i < n; ++i) sum += q[i * n + j] * r[i * n + k];
-      r[j * n + k] = sum;
-      for (i = 0; i < n; ++i) r[i * n + k] -= sum * q[i * n + j];
+      for (i = k; i < n; ++i) sum += v[i] * r[i * n + j];
+      sum *= tau;
+      for (i = k; i < n; ++i) r[i * n + j] -= sum * v[i];
+    }
+    // apply householder transformation to q
+    for (j = 0; j < n; ++j) {
+      sum = 0.0f;
+      for (i = k; i < n; ++i) sum += v[i] * q[j * n + i];
+      sum *= tau;
+      for (i = k; i < n; ++i) q[j * n + i] -= sum * v[i];
     }
   }
+  free(v);
+  free(w);
 }
 
-// compute eigenvalues using qr iteration
+// compute eigenvalues using qr iteration with shifts
 static void compute_eigenvals(float* a, float* eigenvals, size_t size) {
-  float *temp, *q, *r, *rq;
+  float *temp, *q, *r, *qt;
   size_t i, j, iter, mat_size = size * size;
-  
-  // allocate working memory
   temp = (float*)malloc(4 * mat_size * sizeof(float));
-  if (!temp) { for (i = 0; i < size; ++i) eigenvals[i] = 0.0f; return; }
-
-  q = temp, r = temp + mat_size, rq = temp + 2 * mat_size;
-  for (i = 0; i < mat_size; ++i) temp[3 * mat_size + i] = a[i]; // copying input matrix
-
-  // qr iteration
-  for (iter = 0; iter < 100; ++iter) {
-    qr_decomp(temp + 3 * mat_size, q, r, size);
-    int shape[2] = {(int)size, (int)size};
-    matmul_array_ops(r, q, rq, shape, shape);
-    for (i = 0; i < mat_size; ++i) temp[3 * mat_size + i] = rq[i];  // copying back for next iteration
+  if (!temp) { 
+    for (i = 0; i < size; ++i) eigenvals[i] = 0.0f; 
+    return; 
+  }
+  q = temp;
+  r = temp + mat_size;
+  qt = temp + 2 * mat_size;
+  float* curr_a = temp + 3 * mat_size;
+  // copy input matrix
+  for (i = 0; i < mat_size; ++i) curr_a[i] = a[i];
+  // qr iteration with wilkinson shift
+  for (iter = 0; iter < 200; ++iter) {
+    // compute wilkinson shift for last 2x2 submatrix
+    float shift = 0.0f;
+    if (size > 1) {
+      float a11 = curr_a[(size-2) * size + (size-2)], a12 = curr_a[(size-2) * size + (size-1)], a21 = curr_a[(size-1) * size + (size-2)], a22 = curr_a[(size-1) * size + (size-1)];
+      float trace = a11 + a22;
+      float det = a11 * a22 - a12 * a21;
+      float disc = trace * trace - 4.0f * det;
+      if (disc >= 0.0f) {
+        float sqrt_disc = sqrtf(disc);
+        float lambda1 = (trace + sqrt_disc) / 2.0f, lambda2 = (trace - sqrt_disc) / 2.0f;
+        // choose shift closer to a22
+        shift = (fabsf(lambda1 - a22) < fabsf(lambda2 - a22)) ? lambda1 : lambda2;
+      } else { shift = trace / 2.0f; }
+    }
+    // apply shift: a = a - shift * i
+    for (i = 0; i < size; ++i) curr_a[i * size + i] -= shift;
+    qr_decomp(curr_a, q, r, size);      // qr decomposition
+    // compute rq + shift * i
+    for (i = 0; i < mat_size; ++i) curr_a[i] = 0.0f;
+    for (i = 0; i < size; ++i) {
+      for (j = 0; j < size; ++j) {
+        for (size_t k = 0; k < size; ++k) { curr_a[i * size + j] += r[i * size + k] * q[k * size + j]; }
+      }
+    }
+    // add shift back
+    for (i = 0; i < size; ++i) curr_a[i * size + i] += shift;
     // check convergence
     float off_diag = 0.0f;
-    for (i = 0; i < size; ++i) { for (j = 0; j < size; ++j) { if (i != j) off_diag += fabsf(rq[i * size + j]); } }
-    if (off_diag < 1e-6f) break;
+    for (i = 0; i < size; ++i) {
+      for (j = 0; j < size; ++j) { if (i != j) off_diag += fabsf(curr_a[i * size + j]); }
+    }
+    if (off_diag < 1e-8f) break;
   }
-  for (i = 0; i < size; ++i) eigenvals[i] = rq[i * size + i];   // extract eigenvalues from diagonal
+  // extract eigenvalues from diagonal
+  for (i = 0; i < size; ++i) eigenvals[i] = curr_a[i * size + i];
   free(temp);
 }
 
 // compute eigenvectors using qr iteration
 static void compute_eigenvecs(float* a, float* eigenvecs, size_t size) {
-  float *temp, *q, *r, *rq;
+  float *temp, *q, *r, *qt, *v_acc;
   size_t i, j, iter, mat_size = size * size;
-  
-  // allocate working memory
-  temp = (float*)malloc(4 * mat_size * sizeof(float));
-  if (!temp) { for (i = 0; i < mat_size; ++i) eigenvecs[i] = 0.0f; return; }
+  temp = (float*)malloc(5 * mat_size * sizeof(float));
+  if (!temp) { 
+    for (i = 0; i < mat_size; ++i) eigenvecs[i] = 0.0f; 
+    return; 
+  }
+  q = temp;
+  r = temp + mat_size;
+  qt = temp + 2 * mat_size;
+  v_acc = temp + 3 * mat_size;
+  float* curr_a = temp + 4 * mat_size;
 
-  q = temp, r = temp + mat_size, rq = temp + 2 * mat_size;
-  for (i = 0; i < mat_size; ++i) temp[3 * mat_size + i] = a[i]; // copying input matrix
-  // initialize eigenvectors as identity
-  for (i = 0; i < mat_size; ++i) eigenvecs[i] = 0.0f;
-  for (i = 0; i < size; ++i) eigenvecs[i * size + i] = 1.0f;
-
+  // copy input matrix and initialize eigenvectors as identity
+  for (i = 0; i < mat_size; ++i) {
+    curr_a[i] = a[i];
+    eigenvecs[i] = 0.0f;
+    v_acc[i] = 0.0f;
+  }
+  for (i = 0; i < size; ++i) {
+    eigenvecs[i * size + i] = 1.0f;
+    v_acc[i * size + i] = 1.0f;
+  }
   // qr iteration
-  for (iter = 0; iter < 100; ++iter) {
-    qr_decomp(temp + 3 * mat_size, q, r, size);
-    int shape[2] = {(int)size, (int)size};
-    matmul_array_ops(r, q, rq, shape, shape);
-    // update eigenvectors
-    float* new_vecs = (float*)malloc(mat_size * sizeof(float));
-    if (new_vecs) {
-      matmul_array_ops(eigenvecs, q, new_vecs, shape, shape);
-      for (i = 0; i < mat_size; ++i) eigenvecs[i] = new_vecs[i];
-      free(new_vecs);
+  for (iter = 0; iter < 200; ++iter) {
+    // compute wilkinson shift
+    float shift = 0.0f;
+    if (size > 1) {
+      float a11 = curr_a[(size-2) * size + (size-2)], a12 = curr_a[(size-2) * size + (size-1)], a21 = curr_a[(size-1) * size + (size-2)], a22 = curr_a[(size-1) * size + (size-1)];
+      float trace = a11 + a22;
+      float det = a11 * a22 - a12 * a21;
+      float disc = trace * trace - 4.0f * det;
+      if (disc >= 0.0f) {
+        float sqrt_disc = sqrtf(disc);
+        float lambda1 = (trace + sqrt_disc) / 2.0f, lambda2 = (trace - sqrt_disc) / 2.0f;
+        shift = (fabsf(lambda1 - a22) < fabsf(lambda2 - a22)) ? lambda1 : lambda2;
+      } else { shift = trace / 2.0f; }
     }
-    for (i = 0; i < mat_size; ++i) temp[3 * mat_size + i] = rq[i];  // copying back for next iteration
+    // applying shift
+    for (i = 0; i < size; ++i) curr_a[i * size + i] -= shift;
+    // qr decomposition
+    qr_decomp(curr_a, q, r, size);
+    // update accumulated eigenvectors: v_acc = v_acc * q
+    for (i = 0; i < mat_size; ++i) qt[i] = 0.0f;
+    for (i = 0; i < size; ++i) {
+      for (j = 0; j < size; ++j) {
+        for (size_t k = 0; k < size; ++k) { qt[i * size + j] += v_acc[i * size + k] * q[k * size + j]; }
+      }
+    }
+    for (i = 0; i < mat_size; ++i) v_acc[i] = qt[i];
+    // compute rq + shift * i
+    for (i = 0; i < mat_size; ++i) curr_a[i] = 0.0f;
+    for (i = 0; i < size; ++i) {
+      for (j = 0; j < size; ++j) {
+        for (size_t k = 0; k < size; ++k) { curr_a[i * size + j] += r[i * size + k] * q[k * size + j]; }
+      }
+    }
+    for (i = 0; i < size; ++i) curr_a[i * size + i] += shift;     // add shift back
     // check convergence
     float off_diag = 0.0f;
-    for (i = 0; i < size; ++i) { for (j = 0; j < size; ++j) { if (i != j) off_diag += fabsf(rq[i * size + j]); } }
-    if (off_diag < 1e-6f) break;
+    for (i = 0; i < size; ++i) { for (j = 0; j < size; ++j) { if (i != j) off_diag += fabsf(curr_a[i * size + j]); } }
+    if (off_diag < 1e-8f) break;
   }
+  // copy accumulated eigenvectors
+  for (i = 0; i < mat_size; ++i) eigenvecs[i] = v_acc[i];
   free(temp);
 }
 
-// compute eigenvalues for hermitian/symmetric matrices
+// compute eigenvalues for hermitian/symmetric matrices using jacobi method
 static void compute_eigenvals_h(float* a, float* eigenvals, size_t size) {
-  float *temp, *d, *e;
+  float *temp;
   size_t i, j, k, iter, mat_size = size * size;
-
-  // allocate working memory
-  temp = (float*)malloc((mat_size + 2 * size) * sizeof(float));
-  if (!temp) { for (i = 0; i < size; ++i) eigenvals[i] = 0.0f; return; }
-  d = temp + mat_size, e = temp + mat_size + size;
-  // copy input
-  for (i = 0; i < mat_size; ++i) temp[i] = a[i];
-
-  // tridiagonalization using householder reduction
-  for (k = 0; k < size - 2; ++k) {
-    float alpha = 0.0f, beta, tau, sum;
-    // compute norm of column below diagonal
-    for (i = k + 1; i < size; ++i) alpha += temp[i * size + k] * temp[i * size + k];
-    alpha = sqrtf(alpha);
-    if (alpha < 1e-10f) continue;    
-    if (temp[(k + 1) * size + k] < 0) alpha = -alpha;
-
-    // compute householder vector
-    beta = temp[(k + 1) * size + k] + alpha;
-    tau = 2.0f / (alpha * alpha + beta * beta);
-
-    // apply householder transformation
-    for (i = k + 1; i < size; ++i) {
-      for (j = k + 1; j < size; ++j) {
-        sum = 0.0f;
-        for (size_t l = k + 1; l < size; ++l) {
-          float vi = (l == i) ? beta : temp[l * size + k];
-          float vj = (l == j) ? beta : temp[l * size + k];
-          sum += vi * vj;
-        }
-        temp[i * size + j] -= tau * sum;
-      }
-    }
+  temp = (float*)malloc(mat_size * sizeof(float));
+  if (!temp) { 
+    for (i = 0; i < size; ++i) eigenvals[i] = 0.0f; 
+    return; 
   }
-
-  // extract diagonal and subdiagonal
-  for (i = 0; i < size; ++i) {
-    d[i] = temp[i * size + i];
-    e[i] = (i < size - 1) ? temp[(i + 1) * size + i] : 0.0f;
-  }
-
-  // ql algorithm for tridiagonal matrix
+  for (i = 0; i < mat_size; ++i) temp[i] = a[i];    // copy input matrix
+  // jacobi iteration
   for (iter = 0; iter < 100; ++iter) {
-    float converged = 1.0f;
-    for (i = 0; i < size - 1; ++i) {
-      if (fabsf(e[i]) > 1e-10f) {
-        converged = 0.0f;
-        // wilkinson shift
-        float delta = (d[i + 1] - d[i]) / (2.0f * e[i]);
-        float t = 1.0f / (delta + ((delta > 0) ? 1.0f : -1.0f) * sqrtf(delta * delta + 1.0f));
-        float c = 1.0f / sqrtf(1.0f + t * t), s = t * c;
-        // applying givens rotation
-        float temp_d = d[i], temp_e = e[i];
-        d[i] = c * c * temp_d + s * s * d[i + 1] - 2.0f * s * c * temp_e;
-        d[i + 1] = s * s * temp_d + c * c * d[i + 1] + 2.0f * s * c * temp_e;
-        e[i] = (c * c - s * s) * temp_e + s * c * (d[i + 1] - temp_d);
+    // find largest off-diagonal element
+    float max_val = 0.0f;
+    size_t p = 0, q = 1;
+    for (i = 0; i < size; ++i) {
+      for (j = i + 1; j < size; ++j) {
+        if (fabsf(temp[i * size + j]) > max_val) {
+          max_val = fabsf(temp[i * size + j]);
+          p = i; q = j;
+        }
       }
     }
-    if (converged) break;
+
+    if (max_val < 1e-10f) break;
+    // computing jacobi rotation
+    float theta = (temp[q * size + q] - temp[p * size + p]) / (2.0f * temp[p * size + q]);
+    float t = 1.0f / (fabsf(theta) + sqrtf(theta * theta + 1.0f));
+    if (theta < 0.0f) t = -t;
+    float c = 1.0f / sqrtf(t * t + 1.0f);
+    float s = t * c;
+    // apply rotation
+    for (k = 0; k < size; ++k) {
+      if (k != p && k != q) {
+        float temp_kp = temp[k * size + p], temp_kq = temp[k * size + q];
+        temp[k * size + p] = temp[p * size + k] = c * temp_kp - s * temp_kq;
+        temp[k * size + q] = temp[q * size + k] = s * temp_kp + c * temp_kq;
+      }
+    }
+    float temp_pp = temp[p * size + p], temp_qq = temp[q * size + q], temp_pq = temp[p * size + q];
+    temp[p * size + p] = c * c * temp_pp + s * s * temp_qq - 2.0f * s * c * temp_pq;
+    temp[q * size + q] = s * s * temp_pp + c * c * temp_qq + 2.0f * s * c * temp_pq;
+    temp[p * size + q] = temp[q * size + p] = 0.0f;
   }
-  for (i = 0; i < size; ++i) eigenvals[i] = d[i];   // copy eigenvalues
+  for (i = 0; i < size; ++i) eigenvals[i] = temp[i * size + i]; // extract eigenvalues from diagonal
   free(temp);
 }
 
-// compute eigenvectors for hermitian/symmetric matrices
+// computing eigenvectors for hermitian/symmetric matrices using jacobi method
 static void compute_eigenvecs_h(float* a, float* eigenvecs, size_t size) {
-  float *temp, *d, *e;
+  float *temp;
   size_t i, j, k, iter, mat_size = size * size;
-
-  // allocate working memory
-  temp = (float*)malloc((mat_size + 2 * size) * sizeof(float));
-  if (!temp) { for (i = 0; i < mat_size; ++i) eigenvecs[i] = 0.0f; return; }
-  d = temp + mat_size, e = temp + mat_size + size;
-  // copy input and initialize eigenvectors as identity
-  for (i = 0; i < mat_size; ++i) { temp[i] = a[i]; eigenvecs[i] = 0.0f; }
+  temp = (float*)malloc(mat_size * sizeof(float));
+  if (!temp) { 
+    for (i = 0; i < mat_size; ++i) eigenvecs[i] = 0.0f; 
+    return; 
+  }
+  // copying input matrix and initialize eigenvectors as identity
+  for (i = 0; i < mat_size; ++i) {
+    temp[i] = a[i];
+    eigenvecs[i] = 0.0f;
+  }
   for (i = 0; i < size; ++i) eigenvecs[i * size + i] = 1.0f;
-
-  // tridiagonalization using householder reduction
-  for (k = 0; k < size - 2; ++k) {
-    float alpha = 0.0f, beta, tau, sum;
-    // compute norm of column below diagonal
-    for (i = k + 1; i < size; ++i) alpha += temp[i * size + k] * temp[i * size + k];
-    alpha = sqrtf(alpha);
-    if (alpha < 1e-10f) continue;    
-    if (temp[(k + 1) * size + k] < 0) alpha = -alpha;
-
-    // compute householder vector
-    beta = temp[(k + 1) * size + k] + alpha;
-    tau = 2.0f / (alpha * alpha + beta * beta);
-
-    // apply householder transformation
-    for (i = k + 1; i < size; ++i) {
-      for (j = k + 1; j < size; ++j) {
-        sum = 0.0f;
-        for (size_t l = k + 1; l < size; ++l) {
-          float vi = (l == i) ? beta : temp[l * size + k];
-          float vj = (l == j) ? beta : temp[l * size + k];
-          sum += vi * vj;
-        }
-        temp[i * size + j] -= tau * sum;
-      }
-    }
-  }
-
-  // extract diagonal and subdiagonal
-  for (i = 0; i < size; ++i) {
-    d[i] = temp[i * size + i];
-    e[i] = (i < size - 1) ? temp[(i + 1) * size + i] : 0.0f;
-  }
-
-  // ql algorithm for tridiagonal matrix
+  // jacobi iteration
   for (iter = 0; iter < 100; ++iter) {
-    float converged = 1.0f;
-    for (i = 0; i < size - 1; ++i) {
-      if (fabsf(e[i]) > 1e-10f) {
-        converged = 0.0f;
-        // wilkinson shift
-        float delta = (d[i + 1] - d[i]) / (2.0f * e[i]);
-        float t = 1.0f / (delta + ((delta > 0) ? 1.0f : -1.0f) * sqrtf(delta * delta + 1.0f));
-        float c = 1.0f / sqrtf(1.0f + t * t), s = t * c;
-        // applying givens rotation
-        float temp_d = d[i], temp_e = e[i];
-        d[i] = c * c * temp_d + s * s * d[i + 1] - 2.0f * s * c * temp_e;
-        d[i + 1] = s * s * temp_d + c * c * d[i + 1] + 2.0f * s * c * temp_e;
-        e[i] = (c * c - s * s) * temp_e + s * c * (d[i + 1] - temp_d);
-        
-        // updating eigenvectors
-        for (j = 0; j < size; ++j) {
-          float temp_v = eigenvecs[j * size + i];
-          eigenvecs[j * size + i] = c * temp_v - s * eigenvecs[j * size + i + 1];
-          eigenvecs[j * size + i + 1] = s * temp_v + c * eigenvecs[j * size + i + 1];
+    // finding largest off-diagonal element
+    float max_val = 0.0f;
+    size_t p = 0, q = 1;
+    for (i = 0; i < size; ++i) {
+      for (j = i + 1; j < size; ++j) {
+        if (fabsf(temp[i * size + j]) > max_val) {
+          max_val = fabsf(temp[i * size + j]);
+          p = i; q = j;
         }
       }
     }
-    if (converged) break;
+    if (max_val < 1e-10f) break;
+    // compute jacobi rotation
+    float theta = (temp[q * size + q] - temp[p * size + p]) / (2.0f * temp[p * size + q]);
+    float t = 1.0f / (fabsf(theta) + sqrtf(theta * theta + 1.0f));
+    if (theta < 0.0f) t = -t;
+    float c = 1.0f / sqrtf(t * t + 1.0f);
+    float s = t * c;
+    // apply rotation to matrix
+    for (k = 0; k < size; ++k) {
+      if (k != p && k != q) {
+        float temp_kp = temp[k * size + p], temp_kq = temp[k * size + q];
+        temp[k * size + p] = temp[p * size + k] = c * temp_kp - s * temp_kq;
+        temp[k * size + q] = temp[q * size + k] = s * temp_kp + c * temp_kq;
+      }
+    }
+    float temp_pp = temp[p * size + p], temp_qq = temp[q * size + q], temp_pq = temp[p * size + q];
+    temp[p * size + p] = c * c * temp_pp + s * s * temp_qq - 2.0f * s * c * temp_pq;
+    temp[q * size + q] = s * s * temp_pp + c * c * temp_qq + 2.0f * s * c * temp_pq;
+    temp[p * size + q] = temp[q * size + p] = 0.0f;
+
+    // apply rotation to eigenvectors
+    for (k = 0; k < size; ++k) {
+      float temp_kp = eigenvecs[k * size + p], temp_kq = eigenvecs[k * size + q];
+      eigenvecs[k * size + p] = c * temp_kp - s * temp_kq;
+      eigenvecs[k * size + q] = s * temp_kp + c * temp_kq;
+    }
   }
   free(temp);
 }
@@ -307,9 +356,7 @@ void batched_eigenvecs_ops(float* a, float* eigenvecs, size_t size, size_t batch
   }
 }
 
-void eigenvals_h_ops_array(float* a, float* eigenvals, size_t size) {
-  compute_eigenvals_h(a, eigenvals, size);
-}
+void eigenvals_h_ops_array(float* a, float* eigenvals, size_t size) { compute_eigenvals_h(a, eigenvals, size); }
 
 void batched_eigenvals_h_ops(float* a, float* eigenvals, size_t size, size_t batch) {
   size_t mat_size = size * size;
@@ -319,9 +366,7 @@ void batched_eigenvals_h_ops(float* a, float* eigenvals, size_t size, size_t bat
   }
 }
 
-void eigenvecs_h_ops_array(float* a, float* eigenvecs, size_t size) {
-  compute_eigenvecs_h(a, eigenvecs, size);
-}
+void eigenvecs_h_ops_array(float* a, float* eigenvecs, size_t size) { compute_eigenvecs_h(a, eigenvecs, size); }
 
 void batched_eigenvecs_h_ops(float* a, float* eigenvecs, size_t size, size_t batch) {
   size_t mat_size = size * size;
