@@ -80,3 +80,294 @@ Array* batched_det_array(Array* a) {
   free(shape);
   return result;
 }
+
+Array* eig_array(Array* a) {
+  if (a == NULL) {
+    fprintf(stderr, "Arrays cannot be null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != 2) {
+    fprintf(stderr, "Only 2D array supported for eig()\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->shape[0] != a->shape[1]) {
+    fprintf(stderr, "Array must be square to compute eigenvalues. dim0 '%d' != dim1 '%d'\n", a->shape[0], a->shape[1]);
+    exit(EXIT_FAILURE);
+  }
+
+  int* shape = (int*)malloc(1 * sizeof(int));
+  if (!shape) {
+    fprintf(stderr, "Memory allocation failed for shape\n");
+    exit(EXIT_FAILURE);
+  }
+  shape[0] = a->shape[0]; // eigenvalues count equals matrix dimension
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *out = (float*)malloc(a->shape[0] * sizeof(float));
+  if (a_float == NULL || out == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    if (out) free(out);
+    if (shape) free(shape);
+    exit(EXIT_FAILURE);
+  }
+  eigenvals_ops_array(a_float, out, a->shape[0]);
+  Array* result = create_array(out, 1, shape, a->shape[0], a->dtype);
+  free(a_float); 
+  free(out); 
+  free(shape);
+  return result;
+}
+
+Array* eigv_array(Array* a) {
+  if (a == NULL) {
+    fprintf(stderr, "Arrays cannot be null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != 2) {
+    fprintf(stderr, "Only 2D array supported for eigv()\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->shape[0] != a->shape[1]) {
+    fprintf(stderr, "Array must be square to compute eigenvectors. dim0 '%d' != dim1 '%d'\n", a->shape[0], a->shape[1]);
+    exit(EXIT_FAILURE);
+  }
+
+  int* shape = (int*)malloc(2 * sizeof(int));
+  if (!shape) {
+    fprintf(stderr, "Memory allocation failed for shape\n");
+    exit(EXIT_FAILURE);
+  }
+  shape[0] = a->shape[0]; shape[1] = a->shape[1]; // same dimensions as input matrix
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *out = (float*)malloc(a->size * sizeof(float));
+  if (a_float == NULL || out == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    if (out) free(out);
+    if (shape) free(shape);
+    exit(EXIT_FAILURE);
+  }
+  eigenvecs_ops_array(a_float, out, a->shape[0]);
+  Array* result = create_array(out, 2, shape, a->size, a->dtype);
+  free(a_float); 
+  free(out); 
+  free(shape);
+  return result;
+}
+
+Array* eigh_array(Array* a) {
+  if (a == NULL) {
+    fprintf(stderr, "Arrays cannot be null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != 2) {
+    fprintf(stderr, "Only 2D array supported for eigh()\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->shape[0] != a->shape[1]) {
+    fprintf(stderr, "Array must be square to compute hermitian eigenvalues. dim0 '%d' != dim1 '%d'\n", a->shape[0], a->shape[1]);
+    exit(EXIT_FAILURE);
+  }
+
+  int* shape = (int*)malloc(1 * sizeof(int));
+  if (!shape) {
+    fprintf(stderr, "Memory allocation failed for shape\n");
+    exit(EXIT_FAILURE);
+  }
+  shape[0] = a->shape[0]; // eigenvalues count equals matrix dimension
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *out = (float*)malloc(a->shape[0] * sizeof(float));
+  if (a_float == NULL || out == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    if (out) free(out);
+    if (shape) free(shape);
+    exit(EXIT_FAILURE);
+  }
+
+  eigenvals_h_ops_array(a_float, out, a->shape[0]);
+  Array* result = create_array(out, 1, shape, a->shape[0], a->dtype);
+  free(a_float); 
+  free(out); 
+  free(shape);
+  return result;
+}
+
+Array* eighv_array(Array* a) {
+  if (a == NULL) {
+    fprintf(stderr, "Arrays cannot be null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != 2) {
+    fprintf(stderr, "Only 2D array supported for eighv()\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->shape[0] != a->shape[1]) {
+    fprintf(stderr, "Array must be square to compute hermitian eigenvectors. dim0 '%d' != dim1 '%d'\n", a->shape[0], a->shape[1]);
+    exit(EXIT_FAILURE);
+  }
+
+  int* shape = (int*)malloc(2 * sizeof(int));
+  if (!shape) {
+    fprintf(stderr, "Memory allocation failed for shape\n");
+    exit(EXIT_FAILURE);
+  }
+  shape[0] = a->shape[0]; shape[1] = a->shape[1]; // same dimensions as input matrix
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *out = (float*)malloc(a->size * sizeof(float));
+  if (a_float == NULL || out == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    if (out) free(out);
+    if (shape) free(shape);
+    exit(EXIT_FAILURE);
+  }
+  eigenvecs_h_ops_array(a_float, out, a->shape[0]);
+  Array* result = create_array(out, 2, shape, a->size, a->dtype);
+  free(a_float); 
+  free(out); 
+  free(shape);
+  return result;
+}
+
+Array* batched_eig_array(Array* a) {
+  if (a == NULL) {
+    fprintf(stderr, "Arrays cannot be null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != 3) {
+    fprintf(stderr, "Only 3D array supported for batched eig()\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->shape[1] != a->shape[2]) {
+    fprintf(stderr, "Array must be square to compute eigenvalues. dim1 '%d' != dim2 '%d'\n", a->shape[1], a->shape[2]);
+    exit(EXIT_FAILURE);
+  }
+
+  int* shape = (int*)malloc(2 * sizeof(int));
+  if (!shape) {
+    fprintf(stderr, "Memory allocation failed for shape\n");
+    exit(EXIT_FAILURE);
+  }
+  shape[0] = a->shape[0], shape[1] = a->shape[1];
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *out = (float*)malloc(a->shape[0] * a->shape[1] * sizeof(float));
+  if (a_float == NULL || out == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    if (out) free(out);
+    if (shape) free(shape);
+    exit(EXIT_FAILURE);
+  }
+
+  batched_eigenvals_ops(a_float, out, a->shape[1], a->shape[0]);
+  Array* result = create_array(out, 2, shape, a->shape[0] * a->shape[1], a->dtype);
+  free(a_float); 
+  free(out); 
+  free(shape);
+  return result;
+}
+
+Array* batched_eigv_array(Array* a) {
+  if (a == NULL) {
+    fprintf(stderr, "Arrays cannot be null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != 3) {
+    fprintf(stderr, "Only 3D array supported for batched eigv()\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->shape[1] != a->shape[2]) {
+    fprintf(stderr, "Array must be square to compute eigenvectors. dim1 '%d' != dim2 '%d'\n", a->shape[1], a->shape[2]);
+    exit(EXIT_FAILURE);
+  }
+
+  int* shape = (int*)malloc(3 * sizeof(int));
+  if (!shape) {
+    fprintf(stderr, "Memory allocation failed for shape\n");
+    exit(EXIT_FAILURE);
+  }
+  shape[0] = a->shape[0], shape[1] = a->shape[1], shape[2] = a->shape[2];
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *out = (float*)malloc(a->size * sizeof(float));
+  if (a_float == NULL || out == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    if (out) free(out);
+    if (shape) free(shape);
+    exit(EXIT_FAILURE);
+  }
+  batched_eigenvecs_ops(a_float, out, a->shape[1], a->shape[0]);
+  Array* result = create_array(out, 3, shape, a->size, a->dtype);
+  free(a_float); 
+  free(out); 
+  free(shape);
+  return result;
+}
+
+Array* batched_eigh_array(Array* a) {
+  if (a == NULL) {
+    fprintf(stderr, "Arrays cannot be null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != 3) {
+    fprintf(stderr, "Only 3D array supported for batched eigh()\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->shape[1] != a->shape[2]) {
+    fprintf(stderr, "Array must be square to compute hermitian eigenvalues. dim1 '%d' != dim2 '%d'\n", a->shape[1], a->shape[2]);
+    exit(EXIT_FAILURE);
+  }
+
+  int* shape = (int*)malloc(2 * sizeof(int));
+  if (!shape) {
+    fprintf(stderr, "Memory allocation failed for shape\n");
+    exit(EXIT_FAILURE);
+  }
+  shape[0] = a->shape[0], shape[1] = a->shape[1];
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *out = (float*)malloc(a->shape[0] * a->shape[1] * sizeof(float));
+  if (a_float == NULL || out == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    if (out) free(out);
+    if (shape) free(shape);
+    exit(EXIT_FAILURE);
+  }
+  batched_eigenvals_h_ops(a_float, out, a->shape[1], a->shape[0]);
+  Array* result = create_array(out, 2, shape, a->shape[0] * a->shape[1], a->dtype);
+  free(a_float); 
+  free(out); 
+  free(shape);
+  return result;
+}
+
+Array* batched_eighv_array(Array* a) {
+  if (a == NULL) {
+    fprintf(stderr, "Arrays cannot be null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != 3) {
+    fprintf(stderr, "Only 3D array supported for batched eighv()\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->shape[1] != a->shape[2]) {
+    fprintf(stderr, "Array must be square to compute hermitian eigenvectors. dim1 '%d' != dim2 '%d'\n", a->shape[1], a->shape[2]);
+    exit(EXIT_FAILURE);
+  }
+
+  int* shape = (int*)malloc(3 * sizeof(int));
+  if (!shape) {
+    fprintf(stderr, "Memory allocation failed for shape\n");
+    exit(EXIT_FAILURE);
+  }
+  shape[0] = a->shape[0], shape[1] = a->shape[1], shape[2] = a->shape[2];
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *out = (float*)malloc(a->size * sizeof(float));
+  if (a_float == NULL || out == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    if (out) free(out);
+    if (shape) free(shape);
+    exit(EXIT_FAILURE);
+  }
+
+  batched_eigenvecs_h_ops(a_float, out, a->shape[1], a->shape[0]);
+  Array* result = create_array(out, 3, shape, a->size, a->dtype);
+  free(a_float); 
+  free(out); 
+  free(shape);
+  return result;
+}

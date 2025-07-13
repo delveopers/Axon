@@ -83,6 +83,10 @@ _vector_funcs = {
   'linear_1d_array': ([POINTER(CArray), POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'linear_2d_array': ([POINTER(CArray), POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
   'linear_transform_array': ([POINTER(CArray), POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
   'det_array': ([POINTER(CArray)], POINTER(CArray)), 'batched_det_array': ([POINTER(CArray)], POINTER(CArray)),
+  'eig_array': ([POINTER(CArray)], POINTER(CArray)), 'batched_eig_array': ([POINTER(CArray)], POINTER(CArray)),
+  'eigv_array': ([POINTER(CArray)], POINTER(CArray)), 'batched_eigv_array': ([POINTER(CArray)], POINTER(CArray)),
+  'eigh_array': ([POINTER(CArray)], POINTER(CArray)), 'batched_eigh_array': ([POINTER(CArray)], POINTER(CArray)),
+  'eighv_array': ([POINTER(CArray)], POINTER(CArray)), 'batched_eighv_array': ([POINTER(CArray)], POINTER(CArray)),
 }
 
 for name, (argtypes, restype) in _array_funcs.items(): _setup_func(name, argtypes, restype)
