@@ -38,6 +38,10 @@ extern "C" {
   int* out_shape(Array* self);
   int* out_strides(Array* self);
   int out_size(Array* self);
+  float get_item_array(Array* self, int* indices);
+  void set_item_array(Array* self, int* indices, float value);
+  int get_linear_index(Array* self, int* indices);
+
 
   // contiguous array ops
   int is_contiguous_array(Array* self);
