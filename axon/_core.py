@@ -2,7 +2,7 @@ from ctypes import c_float, c_size_t, c_int, c_bool
 from typing import *
 
 from ._cbase import CArray, lib, DType
-from ._helpers import ShapeHelp, DtypeHelp
+from ._helpers import ShapeHelp, DtypeHelp, _get_item_array, _set_item_array, _iter_item_array
 
 int8, int16, int32, int64, long = "int8", "int16", "int32", "int64", "long"
 float32, float64, double = "float32", "float64", "double"
@@ -24,7 +24,10 @@ class array:
   def __str__(self) -> str: return (lib.print_array(self.data), "")[1]
   def is_contiguous(self) -> bool: return bool(lib.is_contiguous_array(self.data))
   def is_view(self) -> bool:  return bool(lib.is_view_array(self.data))
-
+  def __hash__(self): return id(self)
+  def __getitem__(self, key): return _get_item_array(self, key)
+  def __setitem__(self, key, value): return _set_item_array(self, key, value)
+  def __iter__(self): return _iter_item_array(self)
   def astype(self, dtype: str) -> "array":
     out = array(lib.cast_array(self.data, c_int(DtypeHelp._parse_dtype(dtype))).contents, dtype)
     out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
@@ -88,16 +91,13 @@ class array:
     return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
 
   def __rpow__(self, base) -> "array":
-    if isinstance(base, (int, float)):
-      result_ptr = lib.pow_scalar(c_float(base), self.data).contents
+    if isinstance(base, (int, float)): result_ptr = lib.pow_scalar(c_float(base), self.data).contents
     else: raise NotImplementedError("__rpow__ with array base not implemented yet")
     out = array(result_ptr, self.dtype)
     return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
 
   def __eq__(self, other) -> "array":
-    if isinstance(other, (int, float)):
-      # For scalar comparison, create a scalar array first
-      other = array([other], dtype=self.dtype)
+    if isinstance(other, (int, float)): other = array([other], dtype=self.dtype)  # For scalar comparison, create a scalar array first
     else: other = other if isinstance(other, (CArray, array)) else array(other)
     out = array(lib.equal_array(self.data, other.data).contents, DType.BOOL)
     return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
@@ -130,12 +130,9 @@ class array:
 
   def __matmul__(self, other):
     other = other if isinstance(other, (CArray, array)) else array(other, self.dtype)
-    if self.ndim <= 2 and other.ndim <= 2:
-      result_ptr = lib.matmul_array(self.data, other.data).contents
-    elif self.ndim == 3 and other.ndim == 3 and self.shape[0] == other.shape[0]:
-      result_ptr = lib.batch_matmul_array(self.data, other.data).contents
-    else:
-      result_ptr = lib.broadcasted_matmul_array(self.data, other.data).contents
+    if self.ndim <= 2 and other.ndim <= 2: result_ptr = lib.matmul_array(self.data, other.data).contents
+    elif self.ndim == 3 and other.ndim == 3 and self.shape[0] == other.shape[0]: result_ptr = lib.batch_matmul_array(self.data, other.data).contents
+    else: result_ptr = lib.broadcasted_matmul_array(self.data, other.data).contents
     out = array(result_ptr, self.dtype, self.requires_grad)
     shape, ndim, size = lib.out_shape(out.data), self.ndim, lib.out_size(out.data)
     out.shape, out.ndim, out.size = tuple([shape[i] for i in range(ndim)]), ndim, size
@@ -144,10 +141,8 @@ class array:
 
   def dot(self, other):
     other = other if isinstance(other, (CArray, array)) else array(other, self.dtype)
-    if self.ndim <= 2 and other.ndim <= 2:
-      result_ptr = lib.dot_array(self.data, other.data).contents
-    elif self.ndim == 3 and other.ndim == 3 and self.shape[0] == other.shape[0]:
-      result_ptr = lib.batch_dot_array(self.data, other.data).contents
+    if self.ndim <= 2 and other.ndim <= 2: result_ptr = lib.dot_array(self.data, other.data).contents
+    elif self.ndim == 3 and other.ndim == 3 and self.shape[0] == other.shape[0]: result_ptr = lib.batch_dot_array(self.data, other.data).contents
     out = array(result_ptr, self.dtype, self.requires_grad)
     shape, ndim, size = lib.out_shape(result_ptr), out.data.ndim, lib.out_size(result_ptr)
     out.shape, out.ndim, out.size = tuple([shape[i] for i in range(ndim)]), ndim, size

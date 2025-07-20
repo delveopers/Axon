@@ -29,16 +29,13 @@ def _setup_func(name, argtypes, restype):
   return func
 
 _array_funcs = {
-  'create_array': ([POINTER(c_float), c_size_t, POINTER(c_int), c_size_t, c_int], POINTER(CArray)),
-  'delete_array': ([POINTER(CArray)], None), 'delete_data': ([POINTER(CArray)], None),
-  'delete_shape': ([POINTER(CArray)], None), 'delete_strides': ([POINTER(CArray)], None),
-  'print_array': ([POINTER(CArray)], None), 'out_data': ([POINTER(CArray)], POINTER(c_float)),
-  'out_shape': ([POINTER(CArray)], POINTER(c_int)), 'out_strides': ([POINTER(CArray)], POINTER(c_int)),
-  'out_size': ([POINTER(CArray)], c_int), 'contiguous_array': ([POINTER(CArray)], POINTER(CArray)),
+  'create_array': ([POINTER(c_float), c_size_t, POINTER(c_int), c_size_t, c_int], POINTER(CArray)), 'delete_array': ([POINTER(CArray)], None), 'delete_data': ([POINTER(CArray)], None),
+  'delete_shape': ([POINTER(CArray)], None), 'delete_strides': ([POINTER(CArray)], None), 'print_array': ([POINTER(CArray)], None), 'out_data': ([POINTER(CArray)], POINTER(c_float)),
+  'out_shape': ([POINTER(CArray)], POINTER(c_int)), 'out_strides': ([POINTER(CArray)], POINTER(c_int)), 'out_size': ([POINTER(CArray)], c_int), 'contiguous_array': ([POINTER(CArray)], POINTER(CArray)),
   'is_contiguous_array': ([POINTER(CArray)], POINTER(CArray)), 'make_contiguous_inplace_array': ([POINTER(CArray)], POINTER(CArray)),
-  'view_array': ([POINTER(CArray)], POINTER(CArray)), 'is_view_array': ([POINTER(CArray)], POINTER(CArray)),
-  'cast_array': ([POINTER(CArray), c_int], POINTER(CArray)), 'cast_array_simple': ([POINTER(CArray), c_int], POINTER(CArray)),
-  'get_dtype_size': ([c_int], c_size_t), 'get_dtype_name': ([c_int], c_char_p),
+  'view_array': ([POINTER(CArray)], POINTER(CArray)), 'is_view_array': ([POINTER(CArray)], POINTER(CArray)), 'cast_array': ([POINTER(CArray), c_int], POINTER(CArray)), 'cast_array_simple': ([POINTER(CArray), c_int], POINTER(CArray)),
+  'get_dtype_size': ([c_int], c_size_t), 'get_dtype_name': ([c_int], c_char_p), 'get_item_array': ([POINTER(CArray), POINTER(c_int)], float),
+  'set_item_array': ([POINTER(CArray), POINTER(c_int), c_float], None), 'get_linear_index': ([POINTER(CArray), POINTER(c_int)], c_int),
   'dtype_to_float32': ([c_void_p, c_int, c_size_t], c_float), 'float32_to_dtype': ([c_float, c_void_p, c_int, c_size_t], None),
   'convert_to_float32': ([c_void_p, c_int, c_size_t], POINTER(c_float)), 'convert_from_float32': ([POINTER(c_float), c_void_p, c_int, c_size_t], None),
   'allocate_dtype_array': ([c_int, c_size_t], c_void_p), 'copy_with_dtype_conversion': ([c_void_p, c_int, c_void_p, c_int, c_size_t], None),
