@@ -3,6 +3,7 @@ from typing import *
 
 from ._cbase import CArray, lib, DType
 from ._helpers import ShapeHelp, DtypeHelp, _get_item_array, _set_item_array, _iter_item_array
+from .ops.binary import *
 
 int8, int16, int32, int64, long = "int8", "int16", "int32", "int64", "long"
 float32, float64, double = "float32", "float64", "double"
@@ -50,52 +51,21 @@ class array:
     elif self.ndim == 1: return data_array
     else: return ShapeHelp.reshape_list(data_array, self.shape)
 
-  def __add__(self, other) -> "array":
-    result_ptr = lib.add_scalar_array(self.data, c_float(other)).contents if isinstance(other, (int, float)) else lib.add_array(self.data, (other if isinstance(other, (CArray, array)) else array(other, self.dtype)).data).contents
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def __sub__(self, other) -> "array":
-    result_ptr = lib.sub_scalar_array(self.data, c_float(other)).contents if isinstance(other, (int, float)) else lib.sub_array(self.data, (other if isinstance(other, (CArray, array)) else array(other, self.dtype)).data).contents
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def __mul__(self, other) -> "array":
-    result_ptr = lib.mul_scalar_array(self.data, c_float(other)).contents if isinstance(other, (int, float)) else lib.mul_array(self.data, (other if isinstance(other, (CArray, array)) else array(other, self.dtype)).data).contents
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def __truediv__(self, other) -> "array":
-    result_ptr = lib.div_scalar_array(self.data, c_float(other)).contents if isinstance(other, (int, float)) else lib.div_array(self.data, (other if isinstance(other, (CArray, array)) else array(other, self.dtype)).data).contents
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
+  def __add__(self, other) -> "array": return add_array_ops(self, other)
+  def __sub__(self, other) -> "array": return sub_array_ops(self, other)
+  def __mul__(self, other) -> "array": return mul_array_ops(self, other)
+  def __truediv__(self, other) -> "array": return div_array_ops(self, other)
   def __neg__(self) -> "array":
     result_pointer = lib.neg_array(self.data).contents
     out = array(result_pointer, self.dtype)
     return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
 
-  def __radd__(self, other): return self + other
-  def __rsub__(self, other): return self - other
-  def __rmul__(self, other): return self * other
-  def __rtruediv__(self, other): return (self / other) ** -1
-
-  def __neg__(self) -> "array":
-    out = array(lib.neg_array(self.data).contents, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def __pow__(self, exp) -> "array":
-    if isinstance(exp, (int, float)):
-      result_ptr = lib.pow_array(self.data, c_float(exp)).contents
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def __rpow__(self, base) -> "array":
-    if isinstance(base, (int, float)): result_ptr = lib.pow_scalar(c_float(base), self.data).contents
-    else: raise NotImplementedError("__rpow__ with array base not implemented yet")
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
+  def __radd__(self, other): return radd_array_ops(self, other)
+  def __rsub__(self, other): return rsub_array_ops(self, other)
+  def __rmul__(self, other): return rmul_array_ops(self, other)
+  def __rtruediv__(self, other): return rdiv_array_ops(self, other)
+  def __pow__(self, exp) -> "array":  return pow_array_ops(self, exp)
+  def __rpow__(self, base) -> "array": return rpow_array_ops(self, base)
   def __eq__(self, other) -> "array":
     if isinstance(other, (int, float)): other = array([other], dtype=self.dtype)  # For scalar comparison, create a scalar array first
     else: other = other if isinstance(other, (CArray, array)) else array(other)
@@ -128,26 +98,8 @@ class array:
     out = array(result_ptr, self.dtype)
     return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
 
-  def __matmul__(self, other):
-    other = other if isinstance(other, (CArray, array)) else array(other, self.dtype)
-    if self.ndim <= 2 and other.ndim <= 2: result_ptr = lib.matmul_array(self.data, other.data).contents
-    elif self.ndim == 3 and other.ndim == 3 and self.shape[0] == other.shape[0]: result_ptr = lib.batch_matmul_array(self.data, other.data).contents
-    else: result_ptr = lib.broadcasted_matmul_array(self.data, other.data).contents
-    out = array(result_ptr, self.dtype, self.requires_grad)
-    shape, ndim, size = lib.out_shape(out.data), self.ndim, lib.out_size(out.data)
-    out.shape, out.ndim, out.size = tuple([shape[i] for i in range(ndim)]), ndim, size
-    out.strides = ShapeHelp.get_strides(out.shape)
-    return out
-
-  def dot(self, other):
-    other = other if isinstance(other, (CArray, array)) else array(other, self.dtype)
-    if self.ndim <= 2 and other.ndim <= 2: result_ptr = lib.dot_array(self.data, other.data).contents
-    elif self.ndim == 3 and other.ndim == 3 and self.shape[0] == other.shape[0]: result_ptr = lib.batch_dot_array(self.data, other.data).contents
-    out = array(result_ptr, self.dtype, self.requires_grad)
-    shape, ndim, size = lib.out_shape(result_ptr), out.data.ndim, lib.out_size(result_ptr)
-    out.shape, out.ndim, out.size = tuple([shape[i] for i in range(ndim)]), ndim, size
-    out.strides = ShapeHelp.get_strides(out.shape)
-    return out
+  def __matmul__(self, other): return matmul_array_ops(self, other)
+  def dot(self, other): return dot_array_ops(self, other)
 
   def sin(self) -> "array":
     result_ptr = lib.sin_array(self.data).contents
