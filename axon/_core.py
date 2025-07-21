@@ -4,6 +4,8 @@ from typing import *
 from ._cbase import CArray, lib, DType
 from ._helpers import ShapeHelp, DtypeHelp, _get_item_array, _set_item_array, _iter_item_array
 from .ops.binary import *
+from .ops.unary import *
+from .ops.shape import *
 
 int8, int16, int32, int64, long = "int8", "int16", "int32", "int64", "long"
 float32, float64, double = "float32", "float64", "double"
@@ -20,7 +22,10 @@ class array:
       self.size, self.ndim, self.dtype, self.shape, self.strides = len(data), len(shape), dtype or "float32", shape, ShapeHelp.get_strides(shape)
       self._data_ctypes, self._shape_ctypes = (c_float * self.size)(*data.copy()), (c_int * self.ndim)(*shape)
       self.data = lib.create_array(self._data_ctypes, c_size_t(self.ndim), self._shape_ctypes, c_size_t(self.size), c_int(DtypeHelp._parse_dtype(self.dtype)))
-
+  def astype(self, dtype: str) -> "array":
+    out = array(lib.cast_array(self.data, c_int(DtypeHelp._parse_dtype(dtype))).contents, dtype)
+    out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
+    return out
   def __repr__(self) -> str: return f"array({self.tolist()}, dtype={self.dtype})"
   def __str__(self) -> str: return (lib.print_array(self.data), "")[1]
   def is_contiguous(self) -> bool: return bool(lib.is_contiguous_array(self.data))
@@ -29,152 +34,44 @@ class array:
   def __getitem__(self, key): return _get_item_array(self, key)
   def __setitem__(self, key, value): return _set_item_array(self, key, value)
   def __iter__(self): return _iter_item_array(self)
-  def astype(self, dtype: str) -> "array":
-    out = array(lib.cast_array(self.data, c_int(DtypeHelp._parse_dtype(dtype))).contents, dtype)
-    out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
-    return out
-  def contiguous(self) -> "array":
-    out = array(lib.contiguous_array(self.data).contents, self.dtype)
-    out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
-    return out
-  def make_contiguous(self) -> None:
-    lib.make_contiguous_inplace_array(self.data)
-    self.strides = ShapeHelp.get_strides(self.shape)  # updating strides since they may have changed
-  def view(self) -> "array":
-    out = array(lib.view_array(self.data).contents, self.dtype)
-    out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
-    return out
-  def tolist(self) -> List[Any]:
-    data_ptr = lib.out_data(self.data)
-    data_array = [data_ptr[i] for i in range(self.size)]
-    if self.ndim == 0: return data_array[0]
-    elif self.ndim == 1: return data_array
-    else: return ShapeHelp.reshape_list(data_array, self.shape)
-
+  def contiguous(self) -> "array": return contiguous_array_ops(self)
+  def make_contiguous(self) -> None: make_contiguous_array_ops(self)
+  def view(self) -> "array": return view_array_ops(self)
+  def tolist(self) -> List[Any]: return to_list_array(self)
   def __add__(self, other) -> "array": return add_array_ops(self, other)
   def __sub__(self, other) -> "array": return sub_array_ops(self, other)
   def __mul__(self, other) -> "array": return mul_array_ops(self, other)
   def __truediv__(self, other) -> "array": return div_array_ops(self, other)
-  def __neg__(self) -> "array":
-    result_pointer = lib.neg_array(self.data).contents
-    out = array(result_pointer, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
+  def __neg__(self) -> "array": return neg_array_ops(self)
   def __radd__(self, other): return radd_array_ops(self, other)
   def __rsub__(self, other): return rsub_array_ops(self, other)
   def __rmul__(self, other): return rmul_array_ops(self, other)
   def __rtruediv__(self, other): return rdiv_array_ops(self, other)
   def __pow__(self, exp) -> "array":  return pow_array_ops(self, exp)
   def __rpow__(self, base) -> "array": return rpow_array_ops(self, base)
+  def __matmul__(self, other): return matmul_array_ops(self, other)
   def __eq__(self, other) -> "array":
     if isinstance(other, (int, float)): other = array([other], dtype=self.dtype)  # For scalar comparison, create a scalar array first
     else: other = other if isinstance(other, (CArray, array)) else array(other)
     out = array(lib.equal_array(self.data, other.data).contents, DType.BOOL)
     return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def log(self) -> "array":
-    result_ptr = lib.log_array(self.data).contents
-    out = array(result_ptr, self.dtype)
-    out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def sqrt(self) -> "array":
-    result_ptr = lib.sqrt_array(self.data).contents
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def exp(self) -> "array":
-    result_ptr = lib.exp_array(self.data).contents
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def abs(self) -> "array":
-    result_ptr = lib.abs_array(self.data).contents
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def sign(self) -> "array":
-    result_ptr = lib.sign_array(self.data).contents
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def __matmul__(self, other): return matmul_array_ops(self, other)
   def dot(self, other): return dot_array_ops(self, other)
-
-  def sin(self) -> "array":
-    result_ptr = lib.sin_array(self.data).contents
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def cos(self) -> "array":
-    result_ptr = lib.cos_array(self.data).contents
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def tan(self) -> "array":
-    result_ptr = lib.tan_array(self.data).contents
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def sinh(self) -> "array":
-    result_ptr = lib.sinh_array(self.data).contents
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def cosh(self) -> "array":
-    result_ptr = lib.cosh_array(self.data).contents
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def tanh(self) -> "array":
-    result_ptr = lib.tanh_array(self.data).contents
-    out = array(result_ptr, self.dtype)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
-
-  def transpose(self) -> "array":
-    assert self.ndim <= 3, ".transpose() only supported till 3-d arrays"
-    out = array(lib.transpose_array(self.data).contents, self.dtype)
-    out.shape, out.size, out.ndim = ShapeHelp.transpose_shape(self.shape), self.size, self.ndim
-    out.strides = ShapeHelp.get_strides(out.shape)
-    return out
-
-  def reshape(self, new_shape: Union[List[int], Tuple[int]]) -> "array":
-    if isinstance(new_shape, tuple): new_shape = list(new_shape)
-    new_size, ndim = 1, len(new_shape)
-    for dim in new_shape: new_size *= dim
-    if new_size != self.size: raise ValueError(f"Cannot reshape array of size {self.size} into shape {new_shape}")
-    result_ptr = lib.reshape_array(self.data, (c_int * ndim)(*new_shape), c_int(ndim)).contents
-    out = array(result_ptr, self.dtype)
-    out.shape, out.size, out.ndim = tuple(new_shape), self.size, ndim; out.strides = ShapeHelp.get_strides(new_shape)
-    return out
-
-  def squeeze(self, axis: int = -1) -> "array":
-    result_ptr = lib.squeeze_array(self.data, c_int(axis)).contents
-    out = array(result_ptr, self.dtype)
-    if axis == -1: new_shape = [dim for dim in self.shape if dim != 1]      # Remove all dimensions of size 1
-    else: # Remove specific axis if it has size 1
-      if self.shape[axis] != 1: raise ValueError(f"Cannot squeeze axis {axis} with size {self.shape[axis]}")
-      new_shape = list(self.shape); new_shape.pop(axis)
-    out.shape = tuple(new_shape) if new_shape else (1,)
-    out.size, out.ndim, out.strides = self.size, len(out.shape), ShapeHelp.get_strides(out.shape)
-    return out
-
-  def expand_dims(self, axis: int) -> "array":
-    result_ptr = lib.expand_dims_array(self.data, c_int(axis)).contents
-    out = array(result_ptr, self.dtype)
-    new_shape = list(self.shape)
-    if axis < 0: axis = len(new_shape) + axis + 1
-    new_shape.insert(axis, 1)
-    out.shape = tuple(new_shape)
-    out.size, out.ndim, out.strides = self.size, len(out.shape), ShapeHelp.get_strides(out.shape)
-    return out
-
-  def flatten(self) -> "array":
-    result_ptr = lib.flatten_array(self.data).contents
-    out = array(result_ptr, self.dtype)
-    out.shape = (self.size,)
-    out.size, out.ndim, out.strides = self.size, 1, ShapeHelp.get_strides(out.shape)
-    return out
+  def log(self) -> "array": return log_array_ops(self)
+  def sqrt(self) -> "array": return sqrt_array_ops(self)
+  def exp(self) -> "array": return exp_array_ops(self)
+  def abs(self) -> "array": return abs_array_ops(self)
+  def sign(self) -> "array": return sign_array_ops(self)
+  def sin(self) -> "array": return sin_array_ops(self)
+  def cos(self) -> "array": return cos_array_ops(self)
+  def tan(self) -> "array": return tan_array_ops(self)
+  def sinh(self) -> "array": return sinh_array_ops(self)
+  def cosh(self) -> "array": return cosh_array_ops(self)
+  def tanh(self) -> "array": return tanh_array_ops(self)
+  def transpose(self) -> "array": return transpose_array_ops(self)
+  def reshape(self, new_shape: Union[List[int], Tuple[int]]) -> "array": return reshape_array_ops(self, new_shape)
+  def squeeze(self, axis: int = -1) -> "array": return squeeze_array_ops(self, axis)
+  def expand_dims(self, axis: int) -> "array": return expand_dims_ops(self, axis)
+  def flatten(self) -> "array": return flatten_array_ops(self)
 
   def sum(self, axis: int = -1, keepdims: bool = False) -> "array":
     out = array(lib.sum_array(self.data, c_int(axis), c_bool(keepdims)).contents, self.dtype)
