@@ -5,7 +5,8 @@ from ._cbase import CArray, lib, DType
 from ._helpers import ShapeHelp, DtypeHelp, _get_item_array, _set_item_array, _iter_item_array
 from .ops.binary import *
 from .ops.unary import *
-from .ops.shape import *
+from .ops.shape import transpose_array_ops, flatten_array_ops, contiguous_array_ops, view_array_ops, reshape_array_ops, expand_dims_ops, make_contiguous_array_ops, squeeze_array_ops, to_list_array
+from .ops.redux import sum_array_ops, mean_array_ops, max_array_ops, var_array_ops, min_array_ops, std_array_ops
 
 int8, int16, int32, int64, long = "int8", "int16", "int32", "int64", "long"
 float32, float64, double = "float32", "float64", "double"
@@ -50,11 +51,6 @@ class array:
   def __pow__(self, exp) -> "array":  return pow_array_ops(self, exp)
   def __rpow__(self, base) -> "array": return rpow_array_ops(self, base)
   def __matmul__(self, other): return matmul_array_ops(self, other)
-  def __eq__(self, other) -> "array":
-    if isinstance(other, (int, float)): other = array([other], dtype=self.dtype)  # For scalar comparison, create a scalar array first
-    else: other = other if isinstance(other, (CArray, array)) else array(other)
-    out = array(lib.equal_array(self.data, other.data).contents, DType.BOOL)
-    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
   def dot(self, other): return dot_array_ops(self, other)
   def log(self) -> "array": return log_array_ops(self)
   def sqrt(self) -> "array": return sqrt_array_ops(self)
@@ -74,69 +70,39 @@ class array:
   def flatten(self) -> "array": return flatten_array_ops(self)
   def clip(self, max:float): return clip_norm_ops(self, max)
   def clamp(self, max:float, min: float): return clip_norm_ops(self, max, min)
-  def sum(self, axis: int = -1, keepdims: bool = False) -> "array":
-    out = array(lib.sum_array(self.data, c_int(axis), c_bool(keepdims)).contents, self.dtype)
-    if axis == -1:out.shape, out.size, out.ndim = (1,) if keepdims else (), 1, 1 if keepdims else 0   # Sum all elements
-    else:
-      new_shape = list(self.shape)
-      if keepdims: new_shape[axis] = 1
-      else: new_shape.pop(axis)
-      out.shape = tuple(new_shape)
-      out.size, out.ndim, out.strides = 1 if not new_shape else eval('*'.join(map(str, new_shape))), len(new_shape), ShapeHelp.get_strides(out.shape) if out.shape else []
-    return out
-
-  def mean(self, axis: int = -1, keepdims: bool = False) -> "array":
-    out = array(lib.mean_array(self.data, c_int(axis), c_bool(keepdims)).contents, self.dtype)
-    if axis == -1: out.shape, out.size, out.ndim = (1,) if keepdims else (), 1, 1 if keepdims else 0
-    else:
-      new_shape = list(self.shape)
-      if keepdims: new_shape[axis] = 1
-      else: new_shape.pop(axis)
-      out.shape = tuple(new_shape)
-      out.size, out.ndim, out.strides = 1 if not new_shape else eval('*'.join(map(str, new_shape))), len(new_shape), ShapeHelp.get_strides(out.shape) if out.shape else []
-    return out
-
-  def max(self, axis: int = -1, keepdims: bool = False) -> "array":
-    result_ptr = lib.max_array(self.data, c_int(axis), c_bool(keepdims)).contents
-    out = array(result_ptr, self.dtype)
-    
-    if axis == -1: out.shape, out.size, out.ndim = (1,) if keepdims else (), 1, 1 if keepdims else 0
-    else:
-      new_shape = list(self.shape)
-      if keepdims: new_shape[axis] = 1
-      else: new_shape.pop(axis)
-      out.shape = tuple(new_shape)
-      out.size, out.ndim, out.strides = 1 if not new_shape else eval('*'.join(map(str, new_shape))), len(new_shape), ShapeHelp.get_strides(out.shape) if out.shape else []
-    return out
-
-  def min(self, axis: int = -1, keepdims: bool = False) -> "array":
-    out = array(lib.min_array(self.data, c_int(axis), c_bool(keepdims)).contents, self.dtype)
-    if axis == -1: out.shape, out.size, out.ndim = (1,) if keepdims else (), 1, 1 if keepdims else 0
-    else:
-      new_shape = list(self.shape)
-      if keepdims: new_shape[axis] = 1
-      else: new_shape.pop(axis)
-      out.shape = tuple(new_shape)
-      out.size, out.ndim, out.strides = 1 if not new_shape else eval('*'.join(map(str, new_shape))), len(new_shape), ShapeHelp.get_strides(out.shape) if out.shape else []
-    return out
-
-  def var(self, axis: int = -1, ddof: int = 0) -> "array":
-    out = array(lib.var_array(self.data, c_int(axis), c_int(ddof)).contents, self.dtype)
-    if axis == -1:
-      out.shape, out.size, out.ndim = (), 1, 0
-    else:
-      new_shape = list(self.shape)
-      new_shape.pop(axis)
-      out.shape = tuple(new_shape)
-      out.size, out.ndim, out.strides = 1 if not new_shape else eval('*'.join(map(str, new_shape))), len(new_shape), ShapeHelp.get_strides(out.shape) if out.shape else []
-    return out
-
-  def std(self, axis: int = -1, ddof: int = 0) -> "array":
-    out = array(lib.std_array(self.data, c_int(axis), c_int(ddof)).contents, self.dtype)
-    if axis == -1: out.shape, out.size, out.ndim = (), 1, 0
-    else:
-      new_shape = list(self.shape)
-      new_shape.pop(axis)
-      out.shape = tuple(new_shape)
-      out.size, out.ndim, out.strides = 1 if not new_shape else eval('*'.join(map(str, new_shape))), len(new_shape), ShapeHelp.get_strides(out.shape) if out.shape else []
-    return out
+  def sum(self, axis: int = -1, keepdims: bool = False) -> "array": return sum_array_ops(self, axis, keepdims)
+  def mean(self, axis: int = -1, keepdims: bool = False) -> "array": return mean_array_ops(self, axis, keepdims)
+  def max(self, axis: int = -1, keepdims: bool = False) -> "array": return max_array_ops(self, axis, keepdims)
+  def min(self, axis: int = -1, keepdims: bool = False) -> "array": return min_array_ops(self, axis, keepdims)
+  def var(self, axis: int = -1, ddof: int = 0) -> "array": return var_array_ops(self, axis, ddof)
+  def std(self, axis: int = -1, ddof: int = 0) -> "array": return std_array_ops(self, axis, ddof)
+  def __eq__(self, other) -> "array":
+    other = other if isinstance(other, (CArray, array)) else array(other)
+    if isinstance(other, (int, float)): out = array(lib.equal_array(self.data, c_float(other)).contents, DType.BOOL)
+    else: out = array(lib.equal_array(self.data, other.data).contents, DType.BOOL)
+    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
+  def __ne__(self, other) -> "array":
+    other = other if isinstance(other, (CArray, array)) else array(other)
+    if isinstance(other, (int, float)): out = array(lib.not_equal_array(self.data, c_float(other)).contents, DType.BOOL)
+    else: out = array(lib.not_equal_array(self.data, other.data).contents, DType.BOOL)
+    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
+  def __gt__(self, other) -> "array":
+    other = other if isinstance(other, (CArray, array)) else array(other)
+    if isinstance(other, (int, float)): out = array(lib.greater_array(self.data, c_float(other)).contents, DType.BOOL)
+    else: out = array(lib.greater_array(self.data, other.data).contents, DType.BOOL)
+    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
+  def __lt__(self, other) -> "array":
+    other = other if isinstance(other, (CArray, array)) else array(other)
+    if isinstance(other, (int, float)): out = array(lib.smaller_array(self.data, c_float(other)).contents, DType.BOOL)
+    else: out = array(lib.smaller_array(self.data, other.data).contents, DType.BOOL)
+    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
+  def __ge__(self, other) -> "array":
+    other = other if isinstance(other, (CArray, array)) else array(other)
+    if isinstance(other, (int, float)): out = array(lib.greater_equal_array(self.data, c_float(other)).contents, DType.BOOL)
+    else: out = array(lib.greater_equal_array(self.data, other.data).contents, DType.BOOL)
+    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
+  def __le__(self, other) -> "array":
+    other = other if isinstance(other, (CArray, array)) else array(other)
+    if isinstance(other, (int, float)): out = array(lib.smaller_equal_array(self.data, c_float(other)).contents, DType.BOOL)
+    else: out = array(lib.smaller_equal_array(self.data, other.data).contents, DType.BOOL)
+    return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
