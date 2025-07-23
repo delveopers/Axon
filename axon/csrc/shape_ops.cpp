@@ -8,51 +8,25 @@ Array* transpose_array(Array* a) {
     fprintf(stderr, "Array value pointers are null!\n");
     exit(EXIT_FAILURE);
   }  
-  
   int ndim = a->ndim;
   int* result_shape = (int*)malloc(ndim * sizeof(int));
   if (result_shape == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
     exit(EXIT_FAILURE);
   }
-
   // creating the result shape (reversed dimensions)
-  for (int i = 0; i < ndim; i++) {
-    result_shape[i] = a->shape[ndim - 1 - i];
-  }
-  
-  // converting array to float32 for computation
+  for (int i = 0; i < ndim; i++) { result_shape[i] = a->shape[ndim - 1 - i]; }
   float* a_float = convert_to_float32(a->data, a->dtype, a->size);
-  if (a_float == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
-    free(result_shape);
-    exit(EXIT_FAILURE);
-  }  
-  
   float* out = (float*)malloc(a->size * sizeof(float));
-  if (out == NULL) {
-    fprintf(stderr, "Memory allocation failed\n");
-    free(a_float);
-    free(result_shape);
-    exit(EXIT_FAILURE);
-  }
-
   // performing transpose based on dimensions
   // IMPORTANT: passing the ORIGINAL shape to transpose functions, not the result shape
   switch(ndim) {
-    case 1:
-      transpose_1d_array_ops(a_float, out, a->shape);  // using original shape
-      break;
-    case 2:
-      transpose_2d_array_ops(a_float, out, a->shape);  // using original shape
-      break;
-    case 3:
-      transpose_3d_array_ops(a_float, out, a->shape);  // using original shape
-      break;
+    case 1: transpose_1d_array_ops(a_float, out, a->shape); break;
+    case 2: transpose_2d_array_ops(a_float, out, a->shape); break;
+    case 3: transpose_3d_array_ops(a_float, out, a->shape); break;
     default:
-    if (ndim > 3) {
-      transpose_ndim_array_ops(a_float, out, a->shape, a->ndim);
-    } else {
+    if (ndim > 3) { transpose_ndim_array_ops(a_float, out, a->shape, a->ndim); }
+    else {
       fprintf(stderr, "Transpose supported only for 1-3 dimensional arrays\n");
       free(a_float);
       free(out);
@@ -90,21 +64,9 @@ Array* reshape_array(Array* a, int* new_shape, int new_ndim) {
     free(shape);
     exit(EXIT_FAILURE);
   }
-
   // converting array to float32 for computation
   float* a_float = convert_to_float32(a->data, a->dtype, a->size);
-  if (a_float == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
-    free(shape);
-    exit(EXIT_FAILURE);
-  }
   float* out = (float*)malloc(a->size * sizeof(float));
-  if (out == NULL) {
-    fprintf(stderr, "Memory allocation failed\n");
-    free(a_float);
-    free(shape);
-    exit(EXIT_FAILURE);
-  }
   // performing reshape (basically just copy data)
   reassign_array_ops(a_float, out, a->size);
   dtype_t result_dtype = a->dtype;    // reshaping preserves the original dtype
@@ -133,21 +95,7 @@ Array* equal_array(Array* a, Array* b) {
     }
   }
   // converting both arrays to float32 for computation
-  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
-  float* b_float = convert_to_float32(b->data, b->dtype, b->size);
-  if (a_float == NULL || b_float == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
-    if (a_float) free(a_float);
-    if (b_float) free(b_float);
-    exit(EXIT_FAILURE);
-  }
-  float* out = (float*)malloc(a->size * sizeof(float));
-  if (out == NULL) {
-    fprintf(stderr, "Memory allocation failed\n");
-    free(a_float);
-    free(b_float);
-    exit(EXIT_FAILURE);
-  }
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *b_float = convert_to_float32(b->data, b->dtype, b->size);float* out = (float*)malloc(a->size * sizeof(float));
   // perform the equality comparison
   equal_array_ops(a_float, b_float, out, a->size);
   // comparison operations always return boolean type
@@ -206,30 +154,12 @@ Array* squeeze_array(Array* a, int axis) {
     temp_shape[0] = 1;
   }
   int* shape = (int*)malloc(new_ndim * sizeof(int));
-  if (shape == NULL) {
-    fprintf(stderr, "Memory allocation failed\n");
-    free(temp_shape);
-    exit(EXIT_FAILURE);
-  }
-  for (int i = 0; i < new_ndim; i++) {
-    shape[i] = temp_shape[i];
-  }
+  for (int i = 0; i < new_ndim; i++) { shape[i] = temp_shape[i]; }
   free(temp_shape);
-  
+
   // converting array to float32 for computation
   float* a_float = convert_to_float32(a->data, a->dtype, a->size);
-  if (a_float == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
-    free(shape);
-    exit(EXIT_FAILURE);
-  }
   float* out = (float*)malloc(a->size * sizeof(float));
-  if (out == NULL) {
-    fprintf(stderr, "Memory allocation failed\n");
-    free(a_float);
-    free(shape);
-    exit(EXIT_FAILURE);
-  }
   reassign_array_ops(a_float, out, a->size);  // performing squeeze (basically just copy data)
   dtype_t result_dtype = a->dtype;  // squeeze preserves the original dtype
   Array* result = create_array(out, new_ndim, shape, a->size, result_dtype);
@@ -255,36 +185,16 @@ Array* expand_dims_array(Array* a, int axis) {
     exit(EXIT_FAILURE);
   }
   int* shape = (int*)malloc(new_ndim * sizeof(int));
-  if (shape == NULL) {
-    fprintf(stderr, "Memory allocation failed\n");
-    exit(EXIT_FAILURE);
-  }
-
   // create new shape with expanded dimension
   int old_idx = 0;
   for (int i = 0; i < new_ndim; i++) {
-    if (i == axis) {
-      shape[i] = 1;  // insert new dimension of size 1
-    } else {
-      shape[i] = a->shape[old_idx];
-      old_idx++;
-    }
+    if (i == axis) { shape[i] = 1; }
+    else { shape[i] = a->shape[old_idx]; old_idx++; }
   }
-  
+
   // converting array to float32 for computation
   float* a_float = convert_to_float32(a->data, a->dtype, a->size);
-  if (a_float == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
-    free(shape);
-    exit(EXIT_FAILURE);
-  }
   float* out = (float*)malloc(a->size * sizeof(float));
-  if (out == NULL) {
-    fprintf(stderr, "Memory allocation failed\n");
-    free(a_float);
-    free(shape);
-    exit(EXIT_FAILURE);
-  }
   reassign_array_ops(a_float, out, a->size);   // performing expand_dims (basically just copy data)
   dtype_t result_dtype = a->dtype;  // expand_dims preserves the original dtype
   Array* result = create_array(out, new_ndim, shape, a->size, result_dtype);
@@ -301,32 +211,368 @@ Array* flatten_array(Array* a) {
   }
   int new_ndim = 1;
   int* shape = (int*)malloc(new_ndim * sizeof(int));
-  if (shape == NULL) {
-    fprintf(stderr, "Memory allocation failed\n");
-    exit(EXIT_FAILURE);
-  }
-
   shape[0] = a->size;   // flattened array has single dimension with size equal to total elements
   // converting array to float32 for computation
   float* a_float = convert_to_float32(a->data, a->dtype, a->size);
-  if (a_float == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
-    free(shape);
-    exit(EXIT_FAILURE);
-  }
   float* out = (float*)malloc(a->size * sizeof(float));
-  if (out == NULL) {
-    fprintf(stderr, "Memory allocation failed\n");
-    free(a_float);
-    free(shape);
-    exit(EXIT_FAILURE);
-  }
-
   reassign_array_ops(a_float, out, a->size);  // performing flatten (basically just copy data)
   dtype_t result_dtype = a->dtype;  // flatten preserves the original dtype
   Array* result = create_array(out, new_ndim, shape, a->size, result_dtype);
   free(a_float);
   free(out);
   free(shape);
+  return result;
+}
+
+Array* equal_array(Array* a, Array* b) {
+  if (a == NULL || b == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != b->ndim) {
+    fprintf(stderr, "Arrays must have same dimensions %d and %d for equal\n", a->ndim, b->ndim);
+    exit(EXIT_FAILURE);
+  }
+
+  // checking if shapes match
+  for (size_t i = 0; i < a->ndim; i++) {
+    if (a->shape[i] != b->shape[i]) {
+      fprintf(stderr, "Arrays must have the same shape for comparison\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+  // converting both Arrays to float32 for computation
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *b_float = convert_to_float32(b->data, b->dtype, b->size);
+  float* out = (float*)malloc(a->size * sizeof(float));
+  // perform the equality comparison
+  equal_array_ops(a_float, b_float, out, a->size);
+  // comparison operations always return boolean type
+  dtype_t result_dtype = DTYPE_BOOL;
+  Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
+  free(a_float);
+  free(b_float);
+  free(out);
+  return result;
+}
+
+Array* equal_scalar(Array* a, float b) {
+  if (a == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  // converting both Arrays to float32 for computation
+  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
+  if (a_float == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    exit(EXIT_FAILURE);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    free(a_float);
+    exit(EXIT_FAILURE);
+  }
+  equal_scalar_ops(a_float, b, out, a->size);
+  // comparison operations always return boolean type
+  dtype_t result_dtype = DTYPE_BOOL;
+  Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
+  free(a_float);
+  free(out);
+  return result;
+}
+
+Array* not_equal_array(Array* a, Array* b) {
+  if (a == NULL || b == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != b->ndim) {
+    fprintf(stderr, "Arrays must have same dimensions %d and %d for equal\n", a->ndim, b->ndim);
+    exit(EXIT_FAILURE);
+  }
+
+  // checking if shapes match
+  for (size_t i = 0; i < a->ndim; i++) {
+    if (a->shape[i] != b->shape[i]) {
+      fprintf(stderr, "Arrays must have the same shape for comparison\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+  // converting both Arrays to float32 for computation
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *b_float = convert_to_float32(b->data, b->dtype, b->size);
+  float* out = (float*)malloc(a->size * sizeof(float));
+  
+  // perform the equality comparison
+  not_equal_array_ops(a_float, b_float, out, a->size);
+  // comparison operations always return boolean type
+  dtype_t result_dtype = DTYPE_BOOL;
+  Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
+  free(a_float);
+  free(b_float);
+  free(out);
+  return result;
+}
+
+Array* not_equal_scalar(Array* a, float b) {
+  if (a == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  // converting both Arrays to float32 for computation
+  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
+  if (a_float == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    exit(EXIT_FAILURE);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    free(a_float);
+    exit(EXIT_FAILURE);
+  }
+  not_equal_scalar_ops(a_float, b, out, a->size);
+  // comparison operations always return boolean type
+  dtype_t result_dtype = DTYPE_BOOL;
+  Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
+  free(a_float);
+  free(out);
+  return result;
+}
+
+Array* greater_array(Array* a, Array* b) {
+  if (a == NULL || b == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != b->ndim) {
+    fprintf(stderr, "Arrays must have same dimensions %d and %d for equal\n", a->ndim, b->ndim);
+    exit(EXIT_FAILURE);
+  }
+
+  // checking if shapes match
+  for (size_t i = 0; i < a->ndim; i++) {
+    if (a->shape[i] != b->shape[i]) {
+      fprintf(stderr, "Arrays must have the same shape for comparison\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+  // converting both Arrays to float32 for computation
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *b_float = convert_to_float32(b->data, b->dtype, b->size);
+  float* out = (float*)malloc(a->size * sizeof(float));
+  
+  // perform the equality comparison
+  greater_array_ops(a_float, b_float, out, a->size);
+  // comparison operations always return boolean type
+  dtype_t result_dtype = DTYPE_BOOL;
+  Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
+  free(a_float);
+  free(b_float);
+  free(out);
+  return result;
+}
+
+Array* greater_scalar(Array* a, float b) {
+  if (a == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  // converting both Arrays to float32 for computation
+  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
+  if (a_float == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    exit(EXIT_FAILURE);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    free(a_float);
+    exit(EXIT_FAILURE);
+  }
+  greater_scalar_ops(a_float, b, out, a->size);
+  // comparison operations always return boolean type
+  dtype_t result_dtype = DTYPE_BOOL;
+  Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
+  free(a_float);
+  free(out);
+  return result;
+}
+
+Array* greater_equal_array(Array* a, Array* b) {
+  if (a == NULL || b == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != b->ndim) {
+    fprintf(stderr, "Arrays must have same dimensions %d and %d for equal\n", a->ndim, b->ndim);
+    exit(EXIT_FAILURE);
+  }
+
+  // checking if shapes match
+  for (size_t i = 0; i < a->ndim; i++) {
+    if (a->shape[i] != b->shape[i]) {
+      fprintf(stderr, "Arrays must have the same shape for comparison\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+  // converting both Arrays to float32 for computation
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *b_float = convert_to_float32(b->data, b->dtype, b->size);
+  float* out = (float*)malloc(a->size * sizeof(float));
+  
+  // perform the equality comparison
+  greater_equal_array_ops(a_float, b_float, out, a->size);
+  // comparison operations always return boolean type
+  dtype_t result_dtype = DTYPE_BOOL;
+  Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
+  free(a_float);
+  free(b_float);
+  free(out);
+  return result;
+}
+
+Array* greater_equal_scalar(Array* a, float b) {
+  if (a == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  // converting both Arrays to float32 for computation
+  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
+  if (a_float == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    exit(EXIT_FAILURE);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    free(a_float);
+    exit(EXIT_FAILURE);
+  }
+  greater_equal_scalar_ops(a_float, b, out, a->size);
+  // comparison operations always return boolean type
+  dtype_t result_dtype = DTYPE_BOOL;
+  Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
+  free(a_float);
+  free(out);
+  return result;
+}
+
+Array* smaller_array(Array* a, Array* b) {
+  if (a == NULL || b == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != b->ndim) {
+    fprintf(stderr, "Arrays must have same dimensions %d and %d for equal\n", a->ndim, b->ndim);
+    exit(EXIT_FAILURE);
+  }
+
+  // checking if shapes match
+  for (size_t i = 0; i < a->ndim; i++) {
+    if (a->shape[i] != b->shape[i]) {
+      fprintf(stderr, "Arrays must have the same shape for comparison\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+  // converting both Arrays to float32 for computation
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *b_float = convert_to_float32(b->data, b->dtype, b->size);
+  float* out = (float*)malloc(a->size * sizeof(float));
+  
+  // perform the equality comparison
+  smaller_array_ops(a_float, b_float, out, a->size);
+  // comparison operations always return boolean type
+  dtype_t result_dtype = DTYPE_BOOL;
+  Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
+  free(a_float);
+  free(b_float);
+  free(out);
+  return result;
+}
+
+Array* smaller_scalar(Array* a, float b) {
+  if (a == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  // converting both Arrays to float32 for computation
+  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
+  if (a_float == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    exit(EXIT_FAILURE);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    free(a_float);
+    exit(EXIT_FAILURE);
+  }
+  smaller_scalar_ops(a_float, b, out, a->size);
+  // comparison operations always return boolean type
+  dtype_t result_dtype = DTYPE_BOOL;
+  Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
+  free(a_float);
+  free(out);
+  return result;
+}
+
+Array* smaller_equal_array(Array* a, Array* b) {
+  if (a == NULL || b == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  if (a->ndim != b->ndim) {
+    fprintf(stderr, "Arrays must have same dimensions %d and %d for equal\n", a->ndim, b->ndim);
+    exit(EXIT_FAILURE);
+  }
+
+  // checking if shapes match
+  for (size_t i = 0; i < a->ndim; i++) {
+    if (a->shape[i] != b->shape[i]) {
+      fprintf(stderr, "Arrays must have the same shape for comparison\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+  // converting both Arrays to float32 for computation
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *b_float = convert_to_float32(b->data, b->dtype, b->size);
+  float* out = (float*)malloc(a->size * sizeof(float));
+  
+  // perform the equality comparison
+  smaller_equal_array_ops(a_float, b_float, out, a->size);
+  // comparison operations always return boolean type
+  dtype_t result_dtype = DTYPE_BOOL;
+  Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
+  free(a_float);
+  free(b_float);
+  free(out);
+  return result;
+}
+
+Array* smaller_equal_scalar(Array* a, float b) {
+  if (a == NULL) {
+    fprintf(stderr, "Array value pointers are null!\n");
+    exit(EXIT_FAILURE);
+  }
+  // converting both Arrays to float32 for computation
+  float* a_float = convert_to_float32(a->data, a->dtype, a->size);
+  if (a_float == NULL) {
+    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
+    if (a_float) free(a_float);
+    exit(EXIT_FAILURE);
+  }
+  float* out = (float*)malloc(a->size * sizeof(float));
+  if (out == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    free(a_float);
+    exit(EXIT_FAILURE);
+  }
+  smaller_equal_scalar_ops(a_float, b, out, a->size);
+  // comparison operations always return boolean type
+  dtype_t result_dtype = DTYPE_BOOL;
+  Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
+  free(a_float);
+  free(out);
   return result;
 }

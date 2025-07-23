@@ -29,16 +29,13 @@ def _setup_func(name, argtypes, restype):
   return func
 
 _array_funcs = {
-  'create_array': ([POINTER(c_float), c_size_t, POINTER(c_int), c_size_t, c_int], POINTER(CArray)),
-  'delete_array': ([POINTER(CArray)], None), 'delete_data': ([POINTER(CArray)], None),
-  'delete_shape': ([POINTER(CArray)], None), 'delete_strides': ([POINTER(CArray)], None),
-  'print_array': ([POINTER(CArray)], None), 'out_data': ([POINTER(CArray)], POINTER(c_float)),
-  'out_shape': ([POINTER(CArray)], POINTER(c_int)), 'out_strides': ([POINTER(CArray)], POINTER(c_int)),
-  'out_size': ([POINTER(CArray)], c_int), 'contiguous_array': ([POINTER(CArray)], POINTER(CArray)),
-  'is_contiguous_array': ([POINTER(CArray)], POINTER(CArray)), 'make_contiguous_inplace_array': ([POINTER(CArray)], POINTER(CArray)),
-  'view_array': ([POINTER(CArray)], POINTER(CArray)), 'is_view_array': ([POINTER(CArray)], POINTER(CArray)),
-  'cast_array': ([POINTER(CArray), c_int], POINTER(CArray)), 'cast_array_simple': ([POINTER(CArray), c_int], POINTER(CArray)),
-  'get_dtype_size': ([c_int], c_size_t), 'get_dtype_name': ([c_int], c_char_p),
+  'create_array': ([POINTER(c_float), c_size_t, POINTER(c_int), c_size_t, c_int], POINTER(CArray)), 'delete_array': ([POINTER(CArray)], None), 'delete_data': ([POINTER(CArray)], None),
+  'delete_shape': ([POINTER(CArray)], None), 'delete_strides': ([POINTER(CArray)], None), 'print_array': ([POINTER(CArray)], None), 'out_data': ([POINTER(CArray)], POINTER(c_float)),
+  'out_shape': ([POINTER(CArray)], POINTER(c_int)), 'out_strides': ([POINTER(CArray)], POINTER(c_int)), 'out_size': ([POINTER(CArray)], c_int), 'contiguous_array': ([POINTER(CArray)], POINTER(CArray)),
+  'is_contiguous_array': ([POINTER(CArray)], POINTER(CArray)), 'make_contiguous_inplace_array': ([POINTER(CArray)], POINTER(CArray)), 'transpose_array': ([POINTER(CArray)], POINTER(CArray)),
+  'view_array': ([POINTER(CArray)], POINTER(CArray)), 'is_view_array': ([POINTER(CArray)], POINTER(CArray)), 'cast_array': ([POINTER(CArray), c_int], POINTER(CArray)), 'cast_array_simple': ([POINTER(CArray), c_int], POINTER(CArray)),
+  'get_dtype_size': ([c_int], c_size_t), 'get_dtype_name': ([c_int], c_char_p), 'get_item_array': ([POINTER(CArray), POINTER(c_int)], float),
+  'set_item_array': ([POINTER(CArray), POINTER(c_int), c_float], None), 'get_linear_index': ([POINTER(CArray), POINTER(c_int)], c_int),
   'dtype_to_float32': ([c_void_p, c_int, c_size_t], c_float), 'float32_to_dtype': ([c_float, c_void_p, c_int, c_size_t], None),
   'convert_to_float32': ([c_void_p, c_int, c_size_t], POINTER(c_float)), 'convert_from_float32': ([POINTER(c_float), c_void_p, c_int, c_size_t], None),
   'allocate_dtype_array': ([c_int, c_size_t], c_void_p), 'copy_with_dtype_conversion': ([c_void_p, c_int, c_void_p, c_int, c_size_t], None),
@@ -60,7 +57,9 @@ _array_funcs = {
   'sin_array': ([POINTER(CArray)], POINTER(CArray)), 'sinh_array': ([POINTER(CArray)], POINTER(CArray)),
   'cos_array': ([POINTER(CArray)], POINTER(CArray)), 'cosh_array': ([POINTER(CArray)], POINTER(CArray)),
   'tan_array': ([POINTER(CArray)], POINTER(CArray)), 'tanh_array': ([POINTER(CArray)], POINTER(CArray)),
-  'transpose_array': ([POINTER(CArray)], POINTER(CArray)), 'equal_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'equal_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'not_equal_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'greater_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'greater_equal_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'smaller_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'smaller_equal_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
   'reshape_array': ([POINTER(CArray), POINTER(c_int), c_int], POINTER(CArray)), 'squeeze_array': ([POINTER(CArray), c_int], POINTER(CArray)),
   'expand_dims_array': ([POINTER(CArray), c_int], POINTER(CArray)), 'flatten_array': ([POINTER(CArray)], POINTER(CArray)),
   'sum_array': ([POINTER(CArray), c_int, ctypes.c_bool], POINTER(CArray)), 'min_array': ([POINTER(CArray), c_int, ctypes.c_bool], POINTER(CArray)),
@@ -87,6 +86,10 @@ _vector_funcs = {
   'eigv_array': ([POINTER(CArray)], POINTER(CArray)), 'batched_eigv_array': ([POINTER(CArray)], POINTER(CArray)),
   'eigh_array': ([POINTER(CArray)], POINTER(CArray)), 'batched_eigh_array': ([POINTER(CArray)], POINTER(CArray)),
   'eighv_array': ([POINTER(CArray)], POINTER(CArray)), 'batched_eighv_array': ([POINTER(CArray)], POINTER(CArray)),
+  'clip_array': ([POINTER(CArray), c_float], POINTER(CArray)), 'clamp_array': ([POINTER(CArray), c_float, c_float], POINTER(CArray)),
+  'mm_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'std_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'robust_norm_array': ([POINTER(CArray)], POINTER(CArray)),
+  'rms_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'unit_norm_array': ([POINTER(CArray)], POINTER(CArray)),
+  'l1_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'l2_norm_array': ([POINTER(CArray)], POINTER(CArray)),
 }
 
 for name, (argtypes, restype) in _array_funcs.items(): _setup_func(name, argtypes, restype)

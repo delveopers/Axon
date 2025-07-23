@@ -19,22 +19,21 @@ void max_array_ops(float* a, float* out, size_t size, int* shape, int* strides, 
 
     // calculate output size (product of all dimensions except the axis dimension)
     int out_size = 1;
-    for (int i = 0; i < ndim; i++) {
-      if (i != axis) { out_size *= shape[i]; }
-    }
-    // initialize output array to positive infinity
-    for (int i = 0; i < out_size; i++) { out[i] = INFINITY; }
-    // iterate through all elements in the input array
+    for (int i = 0; i < ndim; i++) { if (i != axis) { out_size *= shape[i]; } }
+    for (int i = 0; i < out_size; i++) { out[i] = INFINITY; } // initialize output tensor to positive infinity
+    // iterate through all elements in the input tensor
     for (int i = 0; i < size; i++) {
       // convert linear index to multi-dimensional coordinates
-      int coords[ndim], temp_i = i;
+      int coords[ndim];
+      int temp_i = i;
       for (int d = ndim - 1; d >= 0; d--) {
         coords[d] = temp_i % shape[d];
         temp_i /= shape[d];
       }
 
       // calculate output index by removing the axis dimension
-      int out_idx = 0, multiplier = 1;
+      int out_idx = 0;
+      int multiplier = 1;
       for (int d = ndim - 1; d >= 0; d--) {
         if (d != axis) {
           out_idx += coords[d] * multiplier;
@@ -61,22 +60,21 @@ void min_array_ops(float* a, float* out, size_t size, int* shape, int* strides, 
 
     // calculate output size (product of all dimensions except the axis dimension)
     int out_size = 1;
-    for (int i = 0; i < ndim; i++) {
-      if (i != axis) { out_size *= shape[i]; }
-    }
-    // initialize output array to positive infinity
-    for (int i = 0; i < out_size; i++) { out[i] = INFINITY; }
-    // iterate through all elements in the input array
+    for (int i = 0; i < ndim; i++) { if (i != axis) { out_size *= shape[i]; } }
+    for (int i = 0; i < out_size; i++) { out[i] = INFINITY; } // initialize output tensor to positive infinity
+    // iterate through all elements in the input tensor
     for (int i = 0; i < size; i++) {
       // convert linear index to multi-dimensional coordinates
-      int coords[ndim], temp_i = i;
+      int coords[ndim];
+      int temp_i = i;
       for (int d = ndim - 1; d >= 0; d--) {
         coords[d] = temp_i % shape[d];
         temp_i /= shape[d];
       }
 
       // calculate output index by removing the axis dimension
-      int out_idx = 0, multiplier = 1;
+      int out_idx = 0;
+      int multiplier = 1;
       for (int d = ndim - 1; d >= 0; d--) {
         if (d != axis) {
           out_idx += coords[d] * multiplier;
@@ -99,24 +97,23 @@ void sum_array_ops(float* a, float* out, int* shape, int* strides, int size, int
     if (axis < 0 || axis >= ndim) {
       printf("Invalid Axis\n");
       return;
-    }    
+    }
     // calculate output size (product of all dimensions except the axis dimension)
     int out_size = 1;
-    for (int i = 0; i < ndim; i++) {
-      if (i != axis) { out_size *= shape[i]; }
-    }
-    
-    // initialize output array to zero
+    for (int i = 0; i < ndim; i++) { if (i != axis) { out_size *= shape[i]; } }
+    // initialize output tensor to zero
     for (int i = 0; i < out_size; i++) { out[i] = 0.0; }
-    // iterate through all elements in the input array
+    // iterate through all elements in the input tensor
     for (int i = 0; i < size; i++) {
       // convert linear index to multi-dimensional coordinates
-      int coords[ndim], temp_i = i;
+      int coords[ndim];
+      int temp_i = i;
       for (int d = ndim - 1; d >= 0; d--) {
         coords[d] = temp_i % shape[d];
         temp_i /= shape[d];
       }
-      int out_idx = 0, multiplier = 1;
+      int out_idx = 0;
+      int multiplier = 1;
       for (int d = ndim - 1; d >= 0; d--) {
         if (d != axis) {
           out_idx += coords[d] * multiplier;
@@ -139,17 +136,17 @@ void mean_array_ops(float* a, float* out, int* shape, int* strides, int size, in
       return;
     }
     int out_size = 1;
-    for (int i = 0; i < ndim; i++) {
-      if (i != axis) { out_size *= shape[i]; }
-    }
+    for (int i = 0; i < ndim; i++) { if (i != axis) { out_size *= shape[i]; } }
     for (int i = 0; i < out_size; i++) { out[i] = 0.0; }
     for (int i = 0; i < size; i++) {
-      int coords[ndim], temp_i = i;
+      int coords[ndim];
+      int temp_i = i;
       for (int d = ndim - 1; d >= 0; d--) {
         coords[d] = temp_i % shape[d];
         temp_i /= shape[d];
       }
-      int out_idx = 0, multiplier = 1;
+      int out_idx = 0;
+      int multiplier = 1;
       for (int d = ndim - 1; d >= 0; d--) {
         if (d != axis) {
           out_idx += coords[d] * multiplier;
@@ -189,12 +186,9 @@ void var_array_ops(float* a, float* out, size_t size, int* shape, int* strides, 
     }
     // calculate output size (product of all dimensions except the axis dimension)
     int out_size = 1;
-    for (int i = 0; i < ndim; i++) {
-      if (i != axis) { out_size *= shape[i]; }
-    }
+    for (int i = 0; i < ndim; i++) { if (i != axis) { out_size *= shape[i]; } }
     int axis_size = shape[axis];
-    // initialize output arrays
-    float* means = (float*)calloc(out_size, sizeof(float));
+    float* means = (float*)calloc(out_size, sizeof(float)); // initialize output tensors
     if (means == NULL) {
       printf("Memory allocation failed for means\n");
       return;
@@ -203,13 +197,15 @@ void var_array_ops(float* a, float* out, size_t size, int* shape, int* strides, 
     // first pass: calculate means for each output position
     for (int i = 0; i < size; i++) {
       // convert linear index to multi-dimensional coordinates
-      int coords[ndim], temp_i = i;
+      int coords[ndim];
+      int temp_i = i;
       for (int d = ndim - 1; d >= 0; d--) {
         coords[d] = temp_i % shape[d];
         temp_i /= shape[d];
       }      
       // calculate output index by removing the axis dimension
-      int out_idx = 0, multiplier = 1;
+      int out_idx = 0;
+      int multiplier = 1;
       for (int d = ndim - 1; d >= 0; d--) {
         if (d != axis) {
           out_idx += coords[d] * multiplier;
@@ -224,7 +220,8 @@ void var_array_ops(float* a, float* out, size_t size, int* shape, int* strides, 
     // second pass: calculate variance for each output position
     for (int i = 0; i < size; i++) {
       // convert linear index to multi-dimensional coordinates
-      int coords[ndim], temp_i = i;
+      int coords[ndim];
+      int temp_i = i;
       for (int d = ndim - 1; d >= 0; d--) {
         coords[d] = temp_i % shape[d];
         temp_i /= shape[d];
@@ -245,12 +242,9 @@ void var_array_ops(float* a, float* out, size_t size, int* shape, int* strides, 
     int denominator = axis_size - ddof;
     if (denominator <= 0) {
       printf("Warning: ddof >= sample size, setting variance to 0\n");
-      for (int i = 0; i < out_size; i++) {
-        out[i] = 0.0;
-      }
-    } else {
-      for (int i = 0; i < out_size; i++) { out[i] /= denominator; }
+      for (int i = 0; i < out_size; i++) { out[i] = 0.0; }
     }
+    else { for (int i = 0; i < out_size; i++) { out[i] /= denominator; } }
     free(means);
   }
 }
@@ -271,22 +265,14 @@ void std_array_ops(float* a, float* out, size_t size, int* shape, int* strides, 
     int denominator = size - ddof;
     if (denominator <= 0) {
       printf("Warning: ddof >= sample size, setting std to 0\n");
-      *out = 0.0;
-    } else { *out = sqrtf(variance / denominator); }
+      *out = 0.0; }
+    else { *out = sqrtf(variance / denominator); }
   } else {
-    // axis-specific standard deviation
-    if (axis < 0 || axis >= ndim) {
-      printf("Invalid axis\n");
-      return;
-    }
-    // calculate output size (product of all dimensions except the axis dimension)
-    int out_size = 1;
-    for (int i = 0; i < ndim; i++) {
-      if (i != axis) { out_size *= shape[i]; }
-    }
+    if (axis < 0 || axis >= ndim) { printf("Invalid axis\n"); return; } // axis-specific standard deviation
+    int out_size = 1; // calculate output size (product of all dimensions except the axis dimension)
+    for (int i = 0; i < ndim; i++) { if (i != axis) { out_size *= shape[i]; } }
     int axis_size = shape[axis];
-    // initialize output arrays
-    float* means = (float*)calloc(out_size, sizeof(float));
+    float* means = (float*)calloc(out_size, sizeof(float)); // initialize output tensors
     if (means == NULL) {
       printf("Memory allocation failed for means\n");
       return;
@@ -296,13 +282,15 @@ void std_array_ops(float* a, float* out, size_t size, int* shape, int* strides, 
     // first pass: calculate means for each output position
     for (int i = 0; i < size; i++) {
       // convert linear index to multi-dimensional coordinates
-      int coords[ndim], temp_i = i;
+      int coords[ndim];
+      int temp_i = i;
       for (int d = ndim - 1; d >= 0; d--) {
         coords[d] = temp_i % shape[d];
         temp_i /= shape[d];
       }
       // calculate output index by removing the axis dimension
-      int out_idx = 0, multiplier = 1;
+      int out_idx = 0;
+      int multiplier = 1;
       for (int d = ndim - 1; d >= 0; d--) {
         if (d != axis) {
           out_idx += coords[d] * multiplier;
@@ -318,13 +306,15 @@ void std_array_ops(float* a, float* out, size_t size, int* shape, int* strides, 
     // second pass: calculate variance for each output position
     for (int i = 0; i < size; i++) {
       // convert linear index to multi-dimensional coordinates
-      int coords[ndim], temp_i = i;
+      int coords[ndim];
+      int temp_i = i;
       for (int d = ndim - 1; d >= 0; d--) {
         coords[d] = temp_i % shape[d];
         temp_i /= shape[d];
       }
       // calculate output index by removing the axis dimension
-      int out_idx = 0, multiplier = 1;
+      int out_idx = 0;
+      int multiplier = 1;
       for (int d = ndim - 1; d >= 0; d--) {
         if (d != axis) {
           out_idx += coords[d] * multiplier;
@@ -340,9 +330,9 @@ void std_array_ops(float* a, float* out, size_t size, int* shape, int* strides, 
     if (denominator <= 0) {
       printf("Warning: ddof >= sample size, setting std to 0\n");
       for (int i = 0; i < out_size; i++) { out[i] = 0.0; }
-    } else {
-      for (int i = 0; i < out_size; i++) { out[i] = sqrtf(out[i] / denominator); }
     }
+    else { for (int i = 0; i < out_size; i++) { out[i] = sqrtf(out[i] / denominator); } }
+
     free(means);
   }
 }

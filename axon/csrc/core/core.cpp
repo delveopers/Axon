@@ -450,45 +450,84 @@ int out_size(Array* self) {
   return self->size;
 }
 
+int get_linear_index(Array* self, int* indices) {
+  if (self == NULL || indices == NULL) {
+    fprintf(stderr, "Invalid input parameters!\n");
+    exit(EXIT_FAILURE);
+  }
+
+  int linear_idx = 0;
+  for (int i = 0; i < self->ndim; i++) {
+    if (indices[i] < 0) indices[i] += self->shape[i];
+    if (indices[i] < 0 || indices[i] >= self->shape[i]) {
+      fprintf(stderr, "Index %d out of bounds for dimension %d with size %d\n",  indices[i], i, self->shape[i]);
+      exit(EXIT_FAILURE);
+    }
+    linear_idx += indices[i] * self->strides[i];
+  }
+  return linear_idx;
+}
+
+float get_item_array(Array* self, int* indices) {
+  if (self == NULL || indices == NULL) {
+    fprintf(stderr, "Invalid input parameters!\n");
+    exit(EXIT_FAILURE);
+  }
+
+  int linear_idx = get_linear_index(self, indices);
+  switch (self->dtype) {
+    case DTYPE_FLOAT32: return ((float*)self->data)[linear_idx];
+    case DTYPE_FLOAT64: return (float)((double*)self->data)[linear_idx];
+    case DTYPE_INT8: return (float)((int8_t*)self->data)[linear_idx];
+    case DTYPE_INT16: return (float)((int16_t*)self->data)[linear_idx];
+    case DTYPE_INT32: return (float)((int32_t*)self->data)[linear_idx];
+    case DTYPE_INT64: return (float)((int64_t*)self->data)[linear_idx];
+    case DTYPE_UINT8: return (float)((uint8_t*)self->data)[linear_idx];
+    case DTYPE_UINT16: return (float)((uint16_t*)self->data)[linear_idx];
+    case DTYPE_UINT32: return (float)((uint32_t*)self->data)[linear_idx];
+    case DTYPE_UINT64: return (float)((uint64_t*)self->data)[linear_idx];
+    case DTYPE_BOOL: return (float)((uint8_t*)self->data)[linear_idx];
+    default: return 0.0f;
+  }
+}
+
+void set_item_array(Array* self, int* indices, float value) {
+  if (self == NULL || indices == NULL) {
+    fprintf(stderr, "Invalid input parameters!\n");
+    exit(EXIT_FAILURE);
+  }
+  
+  int linear_idx = get_linear_index(self, indices);
+  switch (self->dtype) {
+    case DTYPE_FLOAT32: ((float*)self->data)[linear_idx] = value; break;
+    case DTYPE_FLOAT64: ((double*)self->data)[linear_idx] = (double)value; break;
+    case DTYPE_INT8: ((int8_t*)self->data)[linear_idx] = (int8_t)value; break;
+    case DTYPE_INT16: ((int16_t*)self->data)[linear_idx] = (int16_t)value; break;
+    case DTYPE_INT32: ((int32_t*)self->data)[linear_idx] = (int32_t)value; break;
+    case DTYPE_INT64: ((int64_t*)self->data)[linear_idx] = (int64_t)value; break;
+    case DTYPE_UINT8: ((uint8_t*)self->data)[linear_idx] = (uint8_t)value; break;
+    case DTYPE_UINT16: ((uint16_t*)self->data)[linear_idx] = (uint16_t)value; break;
+    case DTYPE_UINT32: ((uint32_t*)self->data)[linear_idx] = (uint32_t)value; break;
+    case DTYPE_UINT64: ((uint64_t*)self->data)[linear_idx] = (uint64_t)value; break;
+    case DTYPE_BOOL: ((uint8_t*)self->data)[linear_idx] = (uint8_t)(value != 0); break;
+  }
+}
+
 // helper function to format element based on dtype
 void format_element_by_dtype(void* data, dtype_t dtype, size_t index, char* buffer) {
   switch (dtype) {
-    case DTYPE_FLOAT32:
-      sprintf(buffer, "%.3f", ((float*)data)[index]);
-      break;
-    case DTYPE_FLOAT64:
-      sprintf(buffer, "%.4f", ((double*)data)[index]);
-      break;
-    case DTYPE_INT8:
-      sprintf(buffer, "%d.", ((int8_t*)data)[index]);
-      break;
-    case DTYPE_INT16:
-      sprintf(buffer, "%d.", ((int16_t*)data)[index]);
-      break;
-    case DTYPE_INT32:
-      sprintf(buffer, "%d.", ((int32_t*)data)[index]);
-      break;
-    case DTYPE_INT64:
-      sprintf(buffer, "%lld.", (long long)((int64_t*)data)[index]);
-      break;
-    case DTYPE_UINT8:
-      sprintf(buffer, "%u.", ((uint8_t*)data)[index]);
-      break;
-    case DTYPE_UINT16:
-      sprintf(buffer, "%u.", ((uint16_t*)data)[index]);
-      break;
-    case DTYPE_UINT32:
-      sprintf(buffer, "%u.", ((uint32_t*)data)[index]);
-      break;
-    case DTYPE_UINT64:
-      sprintf(buffer, "%llu.", (unsigned long long)((uint64_t*)data)[index]);
-      break;
-    case DTYPE_BOOL:
-      sprintf(buffer, "%s", ((uint8_t*)data)[index] ? "True" : "False");
-      break;
-    default:
-      sprintf(buffer, "0");
-      break;
+    case DTYPE_FLOAT32: sprintf(buffer, "%.3f", ((float*)data)[index]); break;
+    case DTYPE_FLOAT64: sprintf(buffer, "%.4f", ((double*)data)[index]); break;
+    case DTYPE_INT8: sprintf(buffer, "%d.", ((int8_t*)data)[index]); break;
+    case DTYPE_INT16: sprintf(buffer, "%d.", ((int16_t*)data)[index]); break;
+    case DTYPE_INT32: sprintf(buffer, "%d.", ((int32_t*)data)[index]); break;
+    case DTYPE_INT64: sprintf(buffer, "%lld.", (long long)((int64_t*)data)[index]); break;
+    case DTYPE_UINT8: sprintf(buffer, "%u.", ((uint8_t*)data)[index]); break;
+    case DTYPE_UINT16: sprintf(buffer, "%u.", ((uint16_t*)data)[index]); break;
+    case DTYPE_UINT32: sprintf(buffer, "%u.", ((uint32_t*)data)[index]); break;
+    case DTYPE_UINT64: sprintf(buffer, "%llu.", (unsigned long long)((uint64_t*)data)[index]); break;
+    case DTYPE_BOOL: sprintf(buffer, "%s", ((uint8_t*)data)[index] ? "True" : "False"); break;
+    default: sprintf(buffer, "0"); break;
   }
 }
 
