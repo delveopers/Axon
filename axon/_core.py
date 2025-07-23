@@ -72,7 +72,8 @@ class array:
   def squeeze(self, axis: int = -1) -> "array": return squeeze_array_ops(self, axis)
   def expand_dims(self, axis: int) -> "array": return expand_dims_ops(self, axis)
   def flatten(self) -> "array": return flatten_array_ops(self)
-
+  def clip(self, max:float): return clip_norm_ops(self, max)
+  def clamp(self, max:float, min: float): return clip_norm_ops(self, max, min)
   def sum(self, axis: int = -1, keepdims: bool = False) -> "array":
     out = array(lib.sum_array(self.data, c_int(axis), c_bool(keepdims)).contents, self.dtype)
     if axis == -1:out.shape, out.size, out.ndim = (1,) if keepdims else (), 1, 1 if keepdims else 0   # Sum all elements

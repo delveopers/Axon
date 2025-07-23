@@ -84,6 +84,10 @@ _vector_funcs = {
   'eigv_array': ([POINTER(CArray)], POINTER(CArray)), 'batched_eigv_array': ([POINTER(CArray)], POINTER(CArray)),
   'eigh_array': ([POINTER(CArray)], POINTER(CArray)), 'batched_eigh_array': ([POINTER(CArray)], POINTER(CArray)),
   'eighv_array': ([POINTER(CArray)], POINTER(CArray)), 'batched_eighv_array': ([POINTER(CArray)], POINTER(CArray)),
+  'clip_array': ([POINTER(CArray), c_float], POINTER(CArray)), 'clamp_array': ([POINTER(CArray), c_float, c_float], POINTER(CArray)),
+  'mm_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'std_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'robust_norm_array': ([POINTER(CArray)], POINTER(CArray)),
+  'rms_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'unit_norm_array': ([POINTER(CArray)], POINTER(CArray)),
+  'l1_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'l2_norm_array': ([POINTER(CArray)], POINTER(CArray)),
 }
 
 for name, (argtypes, restype) in _array_funcs.items(): _setup_func(name, argtypes, restype)

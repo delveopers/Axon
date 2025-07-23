@@ -73,3 +73,15 @@ def neg_array_ops(self):
   result_ptr = lib.neg_array(self.data).contents
   out = array(result_ptr, self.dtype)
   return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
+
+def clip_norm_ops(self, max: float):
+  from .._core import array
+  out = array(lib.clip_norm_array(self.data, c_float(max)).contents, self.dtype)
+  out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
+  return out
+
+def clamp_norm_ops(self, max: float, min: float):
+  from .._core import array
+  out = array(lib.clamp_norm_array(self.data, c_float(min), c_float(max)).contents, self.dtype)
+  out.shape, out.size, out.ndim, out.strides = self.shape, self.size, self.ndim, self.strides
+  return out
