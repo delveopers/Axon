@@ -112,3 +112,32 @@ Array* linspace_array(float start, float step, float end, int* shape, size_t siz
   free(out);
   return result;
 }
+
+Array* arange_array(float start, float stop, float step, dtype_t dtype) {
+  if (step == 0.0f) {
+    fprintf(stderr, "Step cannot be zero\n");
+    exit(EXIT_FAILURE);
+  }
+  size_t size = arange_size(start, stop, step);
+  if (size == 0) {
+    fprintf(stderr, "Invalid arange parameters\n");
+    exit(EXIT_FAILURE);
+  }
+  float* out = (float*)malloc(size * sizeof(float));
+  if (!out) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(EXIT_FAILURE);
+  }
+  arange_array_ops(out, start, stop, step, size);
+  int* shape = (int*)malloc(sizeof(int));
+  if (!shape) {
+    fprintf(stderr, "Memory allocation failed\n");
+    free(out);
+    exit(EXIT_FAILURE);
+  }
+  shape[0] = (int)size;
+  Array* result = create_array(out, 1, shape, size, dtype);
+  free(out);
+  free(shape);
+  return result;
+}
