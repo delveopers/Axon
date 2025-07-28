@@ -31,10 +31,10 @@ void div_scalar_ops(float* a, float b, float* out, size_t size) {
   }
 }
 
-void pow_tensor_ops(float* a, float exp, float* out, size_t size) { for (size_t i = 0; i < size; i++) { out[i] = powf(a[i], exp); } }
+void pow_array_ops(float* a, float exp, float* out, size_t size) { for (size_t i = 0; i < size; i++) { out[i] = powf(a[i], exp); } }
 void pow_scalar_ops(float a, float* exp, float* out, size_t size) { for (size_t i = 0; i < size; i++) { out[i] = powf(a, exp[i]); } }
 
-void add_broadcasted_tensor_ops(float* a, float* b, float* out, int* broadcasted_shape, int broadcasted_size, int a_ndim, int b_ndim, int* a_shape, int* b_shape) {
+void add_broadcasted_array_ops(float* a, float* b, float* out, int* broadcasted_shape, int broadcasted_size, int a_ndim, int b_ndim, int* a_shape, int* b_shape) {
   int max_ndim = a_ndim > b_ndim ? a_ndim : b_ndim;
   for (int i = 0; i < broadcasted_size; i++) {
     int index_a, index_b;
@@ -43,7 +43,7 @@ void add_broadcasted_tensor_ops(float* a, float* b, float* out, int* broadcasted
   }
 }
 
-void sub_broadcasted_tensor_ops(float* a, float* b, float* out, int* broadcasted_shape, int broadcasted_size, int a_ndim, int b_ndim, int* a_shape, int* b_shape) {
+void sub_broadcasted_array_ops(float* a, float* b, float* out, int* broadcasted_shape, int broadcasted_size, int a_ndim, int b_ndim, int* a_shape, int* b_shape) {
   int max_ndim = a_ndim > b_ndim ? a_ndim : b_ndim;
   for (int i = 0; i < broadcasted_size; i++) {
     int index_a, index_b;
@@ -52,7 +52,7 @@ void sub_broadcasted_tensor_ops(float* a, float* b, float* out, int* broadcasted
   }
 }
 
-void mul_broadcasted_tensor_ops(float* a, float* b, float* out, int* broadcasted_shape, int broadcasted_size, int a_ndim, int b_ndim, int* a_shape, int* b_shape) {
+void mul_broadcasted_array_ops(float* a, float* b, float* out, int* broadcasted_shape, int broadcasted_size, int a_ndim, int b_ndim, int* a_shape, int* b_shape) {
   int max_ndim = a_ndim > b_ndim ? a_ndim : b_ndim;  // Fixed: was using min instead of max
   for (int i = 0; i < broadcasted_size; i++) {
     int index_a, index_b;
@@ -61,7 +61,7 @@ void mul_broadcasted_tensor_ops(float* a, float* b, float* out, int* broadcasted
   }
 }
 
-void div_broadcasted_tensor_ops(float* a, float* b, float* out, int* broadcasted_shape, int broadcasted_size, int a_ndim, int b_ndim, int* a_shape, int* b_shape) {
+void div_broadcasted_array_ops(float* a, float* b, float* out, int* broadcasted_shape, int broadcasted_size, int a_ndim, int b_ndim, int* a_shape, int* b_shape) {
   int max_ndim = a_ndim > b_ndim ? a_ndim : b_ndim;
   for (int i = 0; i < broadcasted_size; i++) {
     int index_a, index_b;
