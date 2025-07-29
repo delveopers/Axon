@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <string.h>
 #include <math.h>
 #include "ops_matrix.h"
@@ -7,7 +6,7 @@ void inv_ops(float* a, float* out, int* shape) {
   int n = shape[0];
   int size = n * n; 
   memcpy(out, a, size * sizeof(float));
-  float* temp = new float[n * n * 2];
+  float* temp = (float*)malloc(n * n * 2 * sizeof(float));
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       temp[i * n * 2 + j] = out[i * n + j];
@@ -43,7 +42,7 @@ void inv_ops(float* a, float* out, int* shape) {
     for (int j = 0; j < n; j++) out[i * n + j] = temp[i * n * 2 + j + n];
   }
 
-  delete[] temp;
+  free(temp);
 }
 
 void batched_inv_ops(float* a, float* out, int* shape, int ndim) {
@@ -60,7 +59,7 @@ void matrix_rank_ops(float* a, float* out, int* shape) {
   int m = shape[0], n = shape[1];
   int size = m * n;
 
-  float* temp = new float[size];
+  float* temp = (float*)malloc(n * n * 2 * sizeof(float));
   memcpy(temp, a, size * sizeof(float));
   int rank = 0;
   float eps = 1e-10f;
@@ -89,7 +88,7 @@ void matrix_rank_ops(float* a, float* out, int* shape) {
   }
 
   *out = (float)rank;
-  delete[] temp;
+  free(temp);
 }
 
 void batched_matrix_rank_ops(float* a, float* out, int* shape, int ndim) {
@@ -105,10 +104,10 @@ void batched_matrix_rank_ops(float* a, float* out, int* shape, int ndim) {
 void solve_ops(float* a, float* b, float* out, int* shape_a, int* shape_b) {
   int n = shape_a[0];
   int nrhs = (shape_b[1] > 0) ? shape_b[1] : 1;
-  float *temp_a = new float[n * n], *temp_b = new float[n * nrhs];
+  float *temp_a = (float*)malloc(n * n * sizeof(float)), *temp_b = (float*)malloc(n * nrhs * sizeof(float));
   memcpy(temp_a, a, n * n * sizeof(float));
   memcpy(temp_b, b, n * nrhs * sizeof(float));
-  int* piv = new int[n];
+  int* piv = (int*)malloc(n * sizeof(int));
   for (int i = 0; i < n; i++) {
     int pivot = i;
     for (int k = i + 1; k < n; k++) {
@@ -144,9 +143,9 @@ void solve_ops(float* a, float* b, float* out, int* shape_a, int* shape_b) {
     }
   }
   
-  delete[] temp_a;
-  delete[] temp_b;
-  delete[] piv;
+  free(temp_a);
+  free(temp_b);
+  free(piv);
 }
 
 void batched_solve_ops(float* a, float* b, float* out, int* shape_a, int* shape_b, int ndim) {
@@ -163,10 +162,9 @@ void lstsq_ops(float* a, float* b, float* out, int* shape_a, int* shape_b) {
   int n = shape_a[1];
   int nrhs = (shape_b[1] > 0) ? shape_b[1] : 1;
   
-  float* at = new float[n * m];
-  float* ata = new float[n * n];
-  float* atb = new float[n * nrhs];
-  
+  float* at = (float*)malloc(n * m * sizeof(float));
+  float* ata = (float*)malloc(n * n * sizeof(float));
+  float* atb = (float*)malloc(n * nrhs * sizeof(float));
   for (int i = 0; i < m; i++) {
     for (int j = 0; j < n; j++) at[j * m + i] = a[i * n + j];
   }
@@ -187,9 +185,9 @@ void lstsq_ops(float* a, float* b, float* out, int* shape_a, int* shape_b) {
 
   int shape_ata[2] = {n, n}, shape_atb[2] = {n, nrhs};
   solve_ops(ata, atb, out, shape_ata, shape_atb);
-  delete[] at;
-  delete[] ata;
-  delete[] atb;
+  free(at);
+  free(ata);
+  free(atb);
 }
 
 void batched_lstsq_ops(float* a, float* b, float* out, int* shape_a, int* shape_b, int ndim) {

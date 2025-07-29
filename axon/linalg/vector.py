@@ -43,3 +43,36 @@ def cross(a: array, b: array, axis: int=None, dtype: DType = 'float32') -> array
   out = array(ptr, dtype if dtype is not None else a.dtype)
   out_shape, out_size, out_ndim, out_strides = a.shape, a.size, a.ndim, a.strides
   return (setattr(out, "shape", out_shape), setattr(out, "ndim", out_ndim), setattr(out, "size", out_size), setattr(out, "strides", out_strides), out)[4]
+
+def inv(a: array, dtype: DType = 'float32') -> array:
+  a = a if isinstance(a, array) else array(a, 'float32')
+  ptr = lib.inv_array(a.data).contents
+  out = array(ptr, dtype if dtype is not None else a.dtype)
+  out.shape, out.size, out.ndim, out.strides = a.shape, a.size, a.ndim, a.strides
+  return out
+
+def rank(a: array, dtype: DType = 'float32') -> array:
+  a = a if isinstance(a, array) else array(a, 'float32')
+  ptr = lib.matrix_rank_array(a.data).contents
+  out = array(ptr, dtype if dtype is not None else a.dtype)
+  return (setattr(out, "shape", ()), setattr(out, "ndim", 0), setattr(out, "size", 1), setattr(out, "strides", ()), out)[4]
+
+def solve(a: array, b: array, dtype: DType = 'float32') -> array:
+  a, b = a if isinstance(a, array) else array(a, 'float32'), b if isinstance(b, array) else array(b, 'float32')
+  ptr = lib.solve_array(a.data, b.data).contents
+  out = array(ptr, dtype if dtype is not None else a.dtype)
+  if b.ndim == 1:
+    out_shape, out_size, out_ndim, out_strides = (a.shape[1],), a.shape[1], 1, (1,)
+  else:
+    out_shape, out_size, out_ndim, out_strides = (a.shape[1], b.shape[1]), a.shape[1] * b.shape[1], 2, ShapeHelp.get_strides((a.shape[1], b.shape[1]))
+  return (setattr(out, "shape", out_shape), setattr(out, "ndim", out_ndim), setattr(out, "size", out_size), setattr(out, "strides", out_strides), out)[4]
+
+def lstsq(a: array, b: array, dtype: DType = 'float32') -> array:
+  a, b = a if isinstance(a, array) else array(a, 'float32'), b if isinstance(b, array) else array(b, 'float32')
+  ptr = lib.lstsq_array(a.data, b.data).contents
+  out = array(ptr, dtype if dtype is not None else a.dtype)
+  if b.ndim == 1:
+    out_shape, out_size, out_ndim, out_strides = (a.shape[1],), a.shape[1], 1, (1,)
+  else:
+    out_shape, out_size, out_ndim, out_strides = (a.shape[1], b.shape[1]), a.shape[1] * b.shape[1], 2, ShapeHelp.get_strides((a.shape[1], b.shape[1]))
+  return (setattr(out, "shape", out_shape), setattr(out, "ndim", out_ndim), setattr(out, "size", out_size), setattr(out, "strides", out_strides), out)[4]

@@ -92,6 +92,8 @@ _vector_funcs = {
   'l1_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'l2_norm_array': ([POINTER(CArray)], POINTER(CArray)),
   'qr_array': ([POINTER(CArray)], POINTER(POINTER(CArray))), 'batched_qr_array': ([POINTER(CArray)], POINTER(POINTER(CArray))),
   'lu_array': ([POINTER(CArray)], POINTER(POINTER(CArray))), 'batched_lu_array': ([POINTER(CArray)], POINTER(POINTER(CArray))),
+  'inv_array': ([POINTER(CArray)], POINTER(CArray)), 'matrix_rank_array': ([POINTER(CArray)], POINTER(CArray)),
+  'solve_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'lstsq_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
 }
 
 for name, (argtypes, restype) in _array_funcs.items(): _setup_func(name, argtypes, restype)
