@@ -155,54 +155,6 @@ void batched_lu_decomp_ops(float* a, float* l, float* u, int* p, int* shape, int
   }
 }
 
-void lq_decomp_ops(float* a, float* l, float* q, int* shape) {
-  int m = shape[0], n = shape[1];
-  float* at = (float*)malloc(n * m * sizeof(float));  // transpose input matrix for qr decomposition
-  for (int i = 0; i < m; i++) {
-    for (int j = 0; j < n; j++) at[j * m + i] = a[i * n + j];
-  }
-
-  float *q_temp = (float*)malloc(n * n * sizeof(float)), *r_temp = (float*)malloc(n * m * sizeof(float));   // perform qr on transposed matrix
-  int at_shape[2] = {n, m};
-  qr_decomp_ops(at, q_temp, r_temp, at_shape);
-  // transpose results back: a = l * q, where a^T = q^T * l^T
-  // so l^T = r and q^T = q_temp, thus l = r^T and q = q_temp^T
-  // l = r^T (transpose r_temp)
-  memset(l, 0, m * m * sizeof(float));
-  for (int i = 0; i < m && i < n; i++) {
-    for (int j = 0; j <= i && j < m; j++) l[i * m + j] = r_temp[j * m + i];
-  }
-
-  // q = q_temp^T (transpose q_temp)
-  for (int i = 0; i < m; i++) {
-    for (int j = 0; j < n; j++) {
-      if (i < n) q[i * n + j] = q_temp[j * n + i];
-      else q[i * n + j] = 0.0f;
-    }
-  } 
-  free(at);
-  free(q_temp);
-  free(r_temp);
-}
-
-void batched_lq_decomp_ops(float* a, float* l, float* q, int* shape, int ndim) {
-  if (ndim < 2) {
-    fprintf(stderr, "error: lq decomposition requires at least 2 dimensions\n");
-    exit(EXIT_FAILURE);
-  }
-  int m = shape[ndim - 2], n = shape[ndim - 1];
-  int batch_size = 1;
-  for (int i = 0; i < ndim - 2; i++) { batch_size *= shape[i]; }
-  int a_matrix_size = m * n, l_matrix_size = m * m, q_matrix_size = m * n;
-  for (int batch = 0; batch < batch_size; batch++) {
-    float* a_batch = a + batch * a_matrix_size;
-    float* l_batch = l + batch * l_matrix_size;
-    float* q_batch = q + batch * q_matrix_size;
-    int matrix_shape[2] = {m, n};
-    lq_decomp_ops(a_batch, l_batch, q_batch, matrix_shape);
-  }
-}
-
 static void compute_eigenvals(float* a, float* eigenvals, size_t size) {
   float *temp, *q, *r;
   size_t i, j, iter, mat_size = size * size;
@@ -305,7 +257,6 @@ static void compute_eigenvecs(float* a, float* eigenvecs, size_t size) {
   free(temp);
 }
 
-// compute eigenvalues for hermitian/symmetric matrices using jacobi method
 static void compute_eigenvals_h(float* a, float* eigenvals, size_t size) {
   float *temp;
   size_t i, j, k, iter, mat_size = size * size;
@@ -314,46 +265,54 @@ static void compute_eigenvals_h(float* a, float* eigenvals, size_t size) {
     for (i = 0; i < size; ++i) eigenvals[i] = 0.0f; 
     return; 
   }
-  for (i = 0; i < mat_size; ++i) temp[i] = a[i];    // copy input matrix
-  // jacobi iteration
-  for (iter = 0; iter < 100; ++iter) {
-    // find largest off-diagonal element
+  for (i = 0; i < mat_size; ++i) temp[i] = a[i];
+  for (iter = 0; iter < 1000; ++iter) {
     float max_val = 0.0f;
     size_t p = 0, q = 1;
     for (i = 0; i < size; ++i) {
       for (j = i + 1; j < size; ++j) {
-        if (fabsf(temp[i * size + j]) > max_val) {
-          max_val = fabsf(temp[i * size + j]);
+        float val = fabsf(temp[i * size + j]);
+        if (val > max_val) {
+          max_val = val;
           p = i; q = j;
         }
       }
     }
-
-    if (max_val < 1e-10f) break;
-    // computing jacobi rotation
-    float theta = (temp[q * size + q] - temp[p * size + p]) / (2.0f * temp[p * size + q]);
-    float t = 1.0f / (fabsf(theta) + sqrtf(theta * theta + 1.0f));
-    if (theta < 0.0f) t = -t;
-    float c = 1.0f / sqrtf(t * t + 1.0f);
-    float s = t * c;
-    // apply rotation
+    if (max_val < 1e-14f) break;
+    float app = temp[p * size + p], aqq = temp[q * size + q], apq = temp[p * size + q];
+    float theta, t, c, s;
+    if (fabsf(apq) < 1e-15f) {
+      c = 1.0f; s = 0.0f;
+    } else {
+      theta = (aqq - app) / (2.0f * apq);
+      t = (theta >= 0.0f) ? 1.0f / (theta + sqrtf(theta * theta + 1.0f)) : 1.0f / (theta - sqrtf(theta * theta + 1.0f));
+      c = 1.0f / sqrtf(t * t + 1.0f);
+      s = t * c;
+    }
     for (k = 0; k < size; ++k) {
       if (k != p && k != q) {
-        float temp_kp = temp[k * size + p], temp_kq = temp[k * size + q];
-        temp[k * size + p] = temp[p * size + k] = c * temp_kp - s * temp_kq;
-        temp[k * size + q] = temp[q * size + k] = s * temp_kp + c * temp_kq;
+        float akp = temp[k * size + p], akq = temp[k * size + q];
+        temp[k * size + p] = temp[p * size + k] = c * akp - s * akq;
+        temp[k * size + q] = temp[q * size + k] = s * akp + c * akq;
       }
     }
-    float temp_pp = temp[p * size + p], temp_qq = temp[q * size + q], temp_pq = temp[p * size + q];
-    temp[p * size + p] = c * c * temp_pp + s * s * temp_qq - 2.0f * s * c * temp_pq;
-    temp[q * size + q] = s * s * temp_pp + c * c * temp_qq + 2.0f * s * c * temp_pq;
+    temp[p * size + p] = c * c * app + s * s * aqq - 2.0f * s * c * apq;
+    temp[q * size + q] = s * s * app + c * c * aqq + 2.0f * s * c * apq;
     temp[p * size + q] = temp[q * size + p] = 0.0f;
   }
-  for (i = 0; i < size; ++i) eigenvals[i] = temp[i * size + i]; // extract eigenvalues from diagonal
+  for (i = 0; i < size; ++i) eigenvals[i] = temp[i * size + i];
+  for (i = 0; i < size - 1; ++i) {
+    for (j = i + 1; j < size; ++j) {
+      if (eigenvals[i] > eigenvals[j]) {
+        float tmp = eigenvals[i];
+        eigenvals[i] = eigenvals[j];
+        eigenvals[j] = tmp;
+      }
+    }
+  }
   free(temp);
 }
 
-// computing eigenvectors for hermitian/symmetric matrices using jacobi method
 static void compute_eigenvecs_h(float* a, float* eigenvecs, size_t size) {
   float *temp;
   size_t i, j, k, iter, mat_size = size * size;
@@ -362,52 +321,81 @@ static void compute_eigenvecs_h(float* a, float* eigenvecs, size_t size) {
     for (i = 0; i < mat_size; ++i) eigenvecs[i] = 0.0f; 
     return; 
   }
-  // copying input matrix and initialize eigenvectors as identity
   for (i = 0; i < mat_size; ++i) {
     temp[i] = a[i];
     eigenvecs[i] = 0.0f;
   }
   for (i = 0; i < size; ++i) eigenvecs[i * size + i] = 1.0f;
-  // jacobi iteration
-  for (iter = 0; iter < 100; ++iter) {
-    // finding largest off-diagonal element
+  for (iter = 0; iter < 1000; ++iter) {
     float max_val = 0.0f;
     size_t p = 0, q = 1;
     for (i = 0; i < size; ++i) {
       for (j = i + 1; j < size; ++j) {
-        if (fabsf(temp[i * size + j]) > max_val) {
-          max_val = fabsf(temp[i * size + j]);
+        float val = fabsf(temp[i * size + j]);
+        if (val > max_val) {
+          max_val = val;
           p = i; q = j;
         }
       }
     }
-    if (max_val < 1e-10f) break;
-    // compute jacobi rotation
-    float theta = (temp[q * size + q] - temp[p * size + p]) / (2.0f * temp[p * size + q]);
-    float t = 1.0f / (fabsf(theta) + sqrtf(theta * theta + 1.0f));
-    if (theta < 0.0f) t = -t;
-    float c = 1.0f / sqrtf(t * t + 1.0f);
-    float s = t * c;
-    // apply rotation to matrix
+    if (max_val < 1e-14f) break;
+    float app = temp[p * size + p], aqq = temp[q * size + q], apq = temp[p * size + q];
+    float theta, t, c, s;
+    if (fabsf(apq) < 1e-15f) {
+      c = 1.0f; s = 0.0f;
+    } else {
+      theta = (aqq - app) / (2.0f * apq);
+      t = (theta >= 0.0f) ? 1.0f / (theta + sqrtf(theta * theta + 1.0f)) : 1.0f / (theta - sqrtf(theta * theta + 1.0f));
+      c = 1.0f / sqrtf(t * t + 1.0f);
+      s = t * c;
+    }
     for (k = 0; k < size; ++k) {
       if (k != p && k != q) {
-        float temp_kp = temp[k * size + p], temp_kq = temp[k * size + q];
-        temp[k * size + p] = temp[p * size + k] = c * temp_kp - s * temp_kq;
-        temp[k * size + q] = temp[q * size + k] = s * temp_kp + c * temp_kq;
+        float akp = temp[k * size + p], akq = temp[k * size + q];
+        temp[k * size + p] = temp[p * size + k] = c * akp - s * akq;
+        temp[k * size + q] = temp[q * size + k] = s * akp + c * akq;
       }
     }
-    float temp_pp = temp[p * size + p], temp_qq = temp[q * size + q], temp_pq = temp[p * size + q];
-    temp[p * size + p] = c * c * temp_pp + s * s * temp_qq - 2.0f * s * c * temp_pq;
-    temp[q * size + q] = s * s * temp_pp + c * c * temp_qq + 2.0f * s * c * temp_pq;
+    temp[p * size + p] = c * c * app + s * s * aqq - 2.0f * s * c * apq;
+    temp[q * size + q] = s * s * app + c * c * aqq + 2.0f * s * c * apq;
     temp[p * size + q] = temp[q * size + p] = 0.0f;
-
-    // apply rotation to eigenvectors
     for (k = 0; k < size; ++k) {
-      float temp_kp = eigenvecs[k * size + p], temp_kq = eigenvecs[k * size + q];
-      eigenvecs[k * size + p] = c * temp_kp - s * temp_kq;
-      eigenvecs[k * size + q] = s * temp_kp + c * temp_kq;
+      float vkp = eigenvecs[k * size + p], vkq = eigenvecs[k * size + q];
+      eigenvecs[k * size + p] = c * vkp - s * vkq;
+      eigenvecs[k * size + q] = s * vkp + c * vkq;
     }
   }
+  float* eigenvals = (float*)malloc(size * sizeof(float));
+  size_t* indices = (size_t*)malloc(size * sizeof(size_t));
+  for (i = 0; i < size; ++i) {
+    eigenvals[i] = temp[i * size + i];
+    indices[i] = i;
+  }
+  for (i = 0; i < size - 1; ++i) {
+    for (j = i + 1; j < size; ++j) {
+      if (eigenvals[indices[i]] > eigenvals[indices[j]]) {
+        size_t tmp_idx = indices[i];
+        indices[i] = indices[j];
+        indices[j] = tmp_idx;
+      }
+    }
+  }
+  float* temp_vecs = (float*)malloc(mat_size * sizeof(float));
+  for (i = 0; i < mat_size; ++i) temp_vecs[i] = eigenvecs[i];
+  for (j = 0; j < size; ++j) {
+    size_t src_col = indices[j];
+    for (i = 0; i < size; ++i) {
+      float val = temp_vecs[i * size + src_col];
+      if (j == 0 && val < 0.0f) {
+        for (k = 0; k < size; ++k) temp_vecs[k * size + src_col] *= -1.0f;
+        val *= -1.0f;
+      }
+      eigenvecs[i * size + j] = val;
+    }
+  }
+  free(eigenvals);
+  free(indices);
+  free(temp_vecs);
   free(temp);
 }
 

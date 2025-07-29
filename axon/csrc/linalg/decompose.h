@@ -20,8 +20,6 @@ extern "C" {
   Array** batched_qr_array(Array* a);
   Array** lu_array(Array* a);
   Array** batched_lu_array(Array* a);
-  Array** lq_array(Array* a);
-  Array** batched_lq_array(Array* a);
 }
 
 #endif  //!__DECOMPOSE__H__
