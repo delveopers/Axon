@@ -90,6 +90,8 @@ _vector_funcs = {
   'mm_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'std_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'robust_norm_array': ([POINTER(CArray)], POINTER(CArray)),
   'rms_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'unit_norm_array': ([POINTER(CArray)], POINTER(CArray)),
   'l1_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'l2_norm_array': ([POINTER(CArray)], POINTER(CArray)),
+  'qr_array': ([POINTER(CArray)], POINTER(POINTER(CArray))), 'batched_qr_array': ([POINTER(CArray)], POINTER(POINTER(CArray))),
+  'lu_array': ([POINTER(CArray)], POINTER(POINTER(CArray))), 'batched_lu_array': ([POINTER(CArray)], POINTER(POINTER(CArray))),
 }
 
 for name, (argtypes, restype) in _array_funcs.items(): _setup_func(name, argtypes, restype)

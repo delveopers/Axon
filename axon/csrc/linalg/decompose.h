@@ -6,6 +6,7 @@
 
 extern "C" {
   Array* det_array(Array* a);
+  Array* batched_det_array(Array* a);
   Array* eig_array(Array* a);        // eigen values
   Array* eigv_array(Array* a);        // eigen vectors
   Array* eigh_array(Array* a);        // eigen hermitian values
