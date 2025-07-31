@@ -262,21 +262,16 @@ Array** lu_array(Array* a) {
   }
 
   int n = a->shape[0];
-  int *l_shape = (int*)malloc(2 * sizeof(int)), *u_shape = (int*)malloc(2 * sizeof(int)), *p_shape = (int*)malloc(1 * sizeof(int));
+  int *l_shape = (int*)malloc(2 * sizeof(int)), *u_shape = (int*)malloc(2 * sizeof(int));
   l_shape[0] = n; l_shape[1] = n;
   u_shape[0] = n; u_shape[1] = n;
-  p_shape[0] = n;
-
-  float* a_float = convert_to_float32(a->data, a->dtype, a->size), *l_out = (float*)malloc(n * n * sizeof(float)), *u_out = (float*)malloc(n * n * sizeof(float));
+  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *l_out = (float*)malloc(n * n * sizeof(float)), *u_out = (float*)malloc(n * n * sizeof(float));
   int* p_out = (int*)malloc(n * sizeof(int));
   lu_decomp_ops(a_float, l_out, u_out, p_out, a->shape);
-  float* p_float = (float*)malloc(n * sizeof(float));
-  for (int i = 0; i < n; i++) p_float[i] = (float)p_out[i];
-  Array** result = (Array**)malloc(3 * sizeof(Array*));
+  Array** result = (Array**)malloc(2 * sizeof(Array*));
   result[0] = create_array(l_out, 2, l_shape, n * n, a->dtype);
   result[1] = create_array(u_out, 2, u_shape, n * n, a->dtype);
-  result[2] = create_array(p_float, 1, p_shape, n, a->dtype);
-  free(a_float); free(l_out); free(u_out); free(p_out); free(p_float); free(l_shape); free(u_shape); free(p_shape);
+  free(a_float); free(l_out); free(u_out); free(p_out); free(l_shape); free(u_shape); 
   return result;
 }
 
@@ -293,21 +288,17 @@ Array** batched_lu_array(Array* a) {
   int n = a->shape[a->ndim - 1];
   int batch_size = 1;
   for (int i = 0; i < a->ndim - 2; i++) batch_size *= a->shape[i];
-  int *l_shape = (int*)malloc(a->ndim * sizeof(int)), *u_shape = (int*)malloc(a->ndim * sizeof(int)), *p_shape = (int*)malloc(a->ndim - 1 * sizeof(int));
+  int *l_shape = (int*)malloc(a->ndim * sizeof(int)), *u_shape = (int*)malloc(a->ndim * sizeof(int));
   for (int i = 0; i < a->ndim; i++) {
     l_shape[i] = a->shape[i];
     u_shape[i] = a->shape[i];
   }
-  for (int i = 0; i < a->ndim - 1; i++) p_shape[i] = a->shape[i];
   float *a_float = convert_to_float32(a->data, a->dtype, a->size), *l_out = (float*)malloc(a->size * sizeof(float)), *u_out = (float*)malloc(a->size * sizeof(float));
   int* p_out = (int*)malloc(batch_size * n * sizeof(int));
   batched_lu_decomp_ops(a_float, l_out, u_out, p_out, a->shape, a->ndim);
-  float* p_float = (float*)malloc(batch_size * n * sizeof(float));
-  for (int i = 0; i < batch_size * n; i++) { p_float[i] = (float)p_out[i]; }
-  Array** result = (Array**)malloc(3 * sizeof(Array*));
+  Array** result = (Array**)malloc(2 * sizeof(Array*));
   result[0] = create_array(l_out, a->ndim, l_shape, a->size, a->dtype);
   result[1] = create_array(u_out, a->ndim, u_shape, a->size, a->dtype);
-  result[2] = create_array(p_float, a->ndim - 1, p_shape, batch_size * n, a->dtype);
-  free(a_float); free(l_out); free(u_out); free(p_out); free(p_float); free(l_shape); free(u_shape); free(p_shape);
+  free(a_float); free(l_out); free(u_out); free(p_out); free(l_shape); free(u_shape);
   return result;
 }

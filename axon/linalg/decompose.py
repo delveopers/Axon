@@ -23,7 +23,7 @@ def lu(a: array, dtype: DType = 'float32') -> array:
     l_shape, u_shape = (a.shape[0], a.shape[0]), (a.shape[0], a.shape[1])
     l_size, u_size = a.shape[0] * a.shape[0], a.shape[0] * a.shape[1]
   else:
-    l_shape, u_shape = a.shape[:-2] + (a.shape[-2], a.shape[-2]), a.shape[:-1]
+    l_shape, u_shape = a.shape[:-2] + (a.shape[-2], a.shape[-2]), a.shape[:-2] + (a.shape[-2], a.shape[-1])
     l_size, u_size = (a.size // a.shape[-1]) * a.shape[-2], a.size // a.shape[-1]
   l_out, u_out = array(result_ptr[0].contents, dtype or a.dtype), array(result_ptr[1].contents, dtype or a.dtype)
   for out, shape, size in [(l_out, l_shape, l_size), (u_out, u_shape, u_size)]:

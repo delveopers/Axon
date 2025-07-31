@@ -101,7 +101,7 @@ Array* matrix_rank_array(Array* a) {
   float* a_float = convert_to_float32(a->data, a->dtype, a->size);
   int* result_shape = NULL;
   size_t result_ndim = 0, result_size = 1;
-  if (a->ndim == 2) result_ndim = 0, result_size = 1;
+  if (a->ndim == 2) { result_ndim = 1, result_size = 1;}
   else {
     result_ndim = a->ndim - 2;
     result_shape = (int*)malloc(result_ndim * sizeof(int));
@@ -161,17 +161,32 @@ Array* lstsq_array(Array* a, Array* b) {
     fprintf(stderr, "Matrix 'a' must be at least 2D and vector 'b' must be at least 1D\n");
     exit(EXIT_FAILURE);
   }
-  int a_rows = a->shape[a->ndim - 2], a_cols = a->shape[a->ndim - 1], b_rows = b->shape[b->ndim - 1];
+  int a_rows = a->shape[a->ndim - 2], a_cols = a->shape[a->ndim - 1], b_rows = (b->ndim >= 2) ? b->shape[b->ndim - 2] : b->shape[0];
   if (a_rows != b_rows) {
     fprintf(stderr, "Matrix 'a' rows must match vector 'b' size: %d != %d\n", a_rows, b_rows);
     exit(EXIT_FAILURE);
   }
 
   float *a_float = convert_to_float32(a->data, a->dtype, a->size), *b_float = convert_to_float32(b->data, b->dtype, b->size);
-  size_t result_ndim = b->ndim;
-  int* result_shape = (int*)malloc(result_ndim * sizeof(int));
-  for (size_t i = 0; i < result_ndim - 1; i++) result_shape[i] = b->shape[i];
-  result_shape[result_ndim - 1] = a_cols;
+  size_t result_ndim;
+  int* result_shape;  
+  if (b->ndim == 1) {
+    // b is 1D vector -> result is 1D with shape [a_cols]
+    result_ndim = 1;
+    result_shape = (int*)malloc(result_ndim * sizeof(int));
+    result_shape[0] = a_cols;
+  } else {
+    // b is 2D or higher -> result keeps b's batch dimensions + [a_cols, b_cols]
+    result_ndim = b->ndim;
+    result_shape = (int*)malloc(result_ndim * sizeof(int));
+    for (size_t i = 0; i < result_ndim - 2; i++) result_shape[i] = b->shape[i];
+    if (result_ndim >= 2) {
+      result_shape[result_ndim - 2] = a_cols;  // Number of unknowns
+      result_shape[result_ndim - 1] = b->shape[b->ndim - 1];  // Number of RHS
+    } else {
+      result_shape[0] = a_cols;
+    }
+  }
 
   size_t result_size = 1;
   for (size_t i = 0; i < result_ndim; i++) result_size *= result_shape[i];

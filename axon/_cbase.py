@@ -54,6 +54,7 @@ _array_funcs = {
   'neg_array': ([POINTER(CArray)], POINTER(CArray)), 'sqrt_array': ([POINTER(CArray)], POINTER(CArray)),
   'abs_array': ([POINTER(CArray)], POINTER(CArray)), 'matmul_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
   'batch_matmul_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'broadcasted_matmul_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'dot_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
   'sin_array': ([POINTER(CArray)], POINTER(CArray)), 'sinh_array': ([POINTER(CArray)], POINTER(CArray)),
   'cos_array': ([POINTER(CArray)], POINTER(CArray)), 'cosh_array': ([POINTER(CArray)], POINTER(CArray)),
   'tan_array': ([POINTER(CArray)], POINTER(CArray)), 'tanh_array': ([POINTER(CArray)], POINTER(CArray)),
