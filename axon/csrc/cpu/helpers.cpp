@@ -80,3 +80,19 @@ void fill_array_ops(float* out, float value, size_t size) {
 void linspace_array_ops(float* out, float start, float step_size, size_t size) {
   if (!out) return;
   for (size_t i = 0; i < size; i++) { out[i] = start + (float)i * step_size; } }
+
+size_t arange_size(float start, float stop, float step) {
+  if (step == 0.0f) return 0;
+  if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) return 0;
+  return (size_t)ceil((double)(stop - start) / (double)step);
+}
+
+void arange_array_ops(float* out, float start, float stop, float step, size_t max_size) {
+  if (!out || step == 0.0f) return;
+  size_t i = 0;
+  float val = start;
+  while (i < max_size && ((step > 0) ? (val < stop) : (val > stop))) {
+    out[i++] = val;
+    val += step;
+  }
+}

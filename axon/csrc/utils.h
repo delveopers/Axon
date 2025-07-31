@@ -16,6 +16,7 @@ extern "C" {
   Array* uniform_array(int low, int high, int* shape, size_t size, size_t ndim, dtype_t dtype);
   Array* fill_array(float fill_val, int* shape, size_t size, size_t ndim, dtype_t dtype);
   Array* linspace_array(float start, float step, float end, int* shape, size_t size, size_t ndim, dtype_t dtype);
+  Array* arange_array(float start, float stop, float step, dtype_t dtype);
 }
 
 #endif

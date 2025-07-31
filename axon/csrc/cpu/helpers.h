@@ -14,6 +14,8 @@ extern "C" {
   // array filling functions
   void fill_array_ops(float* out, float value, size_t size);
   void linspace_array_ops(float* out, float start, float step_size, size_t size);
+  void arange_array_ops(float* out, float start, float stop, float step, size_t max_size);
+  size_t arange_size(float start, float stop, float step);
 
   // random array generation functions
   void fill_randn(float* out, size_t size);

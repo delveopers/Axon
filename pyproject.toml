@@ -25,12 +25,12 @@ classifiers = [
 [tool.scikit-build]
 cmake.source-dir = "."
 cmake.build-type = "Release"
-cmake.args = ["-G", "Ninja"]  # Force Ninja generator
-wheel.expand-macos-universal-tags = true
-wheel.install-dir = "axon"
+cmake.args = ["-G", "Ninja"]
 install.components = ["python_modules"]
 
 [tool.scikit-build.wheel]
+expand-macos-universal-tags = true
+install-dir = "axon"
 packages = ["axon", "axon.linalg", "axon.dataset"]
 
 [tool.scikit-build.cmake.define]

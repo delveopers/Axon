@@ -72,7 +72,7 @@ def rpow_array_ops(self, base):
 def matmul_array_ops(self, other):
   from .._core import array
   other = other if isinstance(other, (CArray, array)) else array(other, self.dtype)
-  if self.ndim <= 2 and other.ndim <= 2: result_ptr = lib.mamtul_array(self.data, other.data).contents
+  if self.ndim <= 2 and other.ndim <= 2: result_ptr = lib.matmul_array(self.data, other.data).contents
   elif self.ndim == 3 and other.ndim == 3: result_ptr = lib.batch_matmul_arry(self.data, other.data).contents
   else: result_ptr = lib.broadcasted_matmul_array(self.data, other.data).contents
   out = array(result_ptr, self.dtype)

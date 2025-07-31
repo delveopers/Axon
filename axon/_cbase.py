@@ -16,12 +16,12 @@ def _get_lib_path():
           if file.startswith(name) and any(file.endswith(ext) for ext in possible_exts if ext):
             return os.path.join(root, file)
   
-  raise FileNotFoundError(f"Could not find array library in {search_dirs}. Available files: {[f for d in search_dirs if os.path.exists(d) for f in os.listdir(d)]}")
+  raise FileNotFoundError(f'Could not find array library in {search_dirs}. Available files: {[f for d in search_dirs if os.path.exists(d) for f in os.listdir(d)]}')
 
 lib = ctypes.CDLL(_get_lib_path())
 class DType: FLOAT32, FLOAT64, INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64, BOOL = range(11)
-class DTypeValue(ctypes.Union): _fields_ = [("f32", c_float), ("f64", c_double), ("i8", c_int8), ("i16", c_int16), ("i32", c_int32), ("i64", c_int64), ("u8", c_uint8), ("u16", c_uint16), ("u32", c_uint32), ("u64", c_uint64), ("boolean", c_uint8)]
-class CArray(Structure): _fields_ = [("data", c_void_p), ("strides", POINTER(c_int)), ("backstrides", POINTER(c_int)), ("shape", POINTER(c_int)), ("size", c_size_t), ("ndim", c_size_t), ("dtype", c_int), ("is_view", c_int)]
+class DTypeValue(ctypes.Union): _fields_ = [('f32', c_float), ('f64', c_double), ('i8', c_int8), ('i16', c_int16), ('i32', c_int32), ('i64', c_int64), ('u8', c_uint8), ('u16', c_uint16), ('u32', c_uint32), ('u64', c_uint64), ('boolean', c_uint8)]
+class CArray(Structure): _fields_ = [('data', c_void_p), ('strides', POINTER(c_int)), ('backstrides', POINTER(c_int)), ('shape', POINTER(c_int)), ('size', c_size_t), ('ndim', c_size_t), ('dtype', c_int), ('is_view', c_int)]
 
 def _setup_func(name, argtypes, restype):
   func = getattr(lib, name)
@@ -72,7 +72,7 @@ _utils_funcs = {
   'zeros_array': ([POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)), 'ones_array': ([POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)),
   'randn_array': ([POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)), 'randint_array': ([c_int, c_int, POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)),
   'uniform_array': ([c_int, c_int, POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)), 'fill_array': ([c_float, POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)),
-  'linspace_array': ([c_float, c_float, c_float, POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray))
+  'linspace_array': ([c_float, c_float, c_float, POINTER(c_int), c_size_t, c_size_t, c_int], POINTER(CArray)), 'arange_array': ([c_float, c_float, c_float, c_int], POINTER(CArray))
 }
 
 _vector_funcs = {
@@ -90,6 +90,11 @@ _vector_funcs = {
   'mm_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'std_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'robust_norm_array': ([POINTER(CArray)], POINTER(CArray)),
   'rms_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'unit_norm_array': ([POINTER(CArray)], POINTER(CArray)),
   'l1_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'l2_norm_array': ([POINTER(CArray)], POINTER(CArray)),
+  'qr_array': ([POINTER(CArray)], POINTER(POINTER(CArray))), 'batched_qr_array': ([POINTER(CArray)], POINTER(POINTER(CArray))),
+  'lu_array': ([POINTER(CArray)], POINTER(POINTER(CArray))), 'batched_lu_array': ([POINTER(CArray)], POINTER(POINTER(CArray))),
+  'inv_array': ([POINTER(CArray)], POINTER(CArray)), 'matrix_rank_array': ([POINTER(CArray)], POINTER(CArray)),
+  'solve_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'lstsq_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'svd_array': ([POINTER(CArray)], POINTER(POINTER(CArray))), 'cholesky_array': ([POINTER(CArray)], POINTER(CArray))
 }
 
 for name, (argtypes, restype) in _array_funcs.items(): _setup_func(name, argtypes, restype)

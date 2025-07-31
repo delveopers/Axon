@@ -77,36 +77,6 @@ Array* reshape_array(Array* a, int* new_shape, int new_ndim) {
   return result;
 }
 
-Array* equal_array(Array* a, Array* b) {
-  if (a == NULL || b == NULL) {
-    fprintf(stderr, "Array value pointers are null!\n");
-    exit(EXIT_FAILURE);
-  }
-  if (a->ndim != b->ndim) {
-    fprintf(stderr, "arrays must have same dimensions %d and %d for equal\n", a->ndim, b->ndim);
-    exit(EXIT_FAILURE);
-  }
-
-  // checking if shapes match
-  for (size_t i = 0; i < a->ndim; i++) {
-    if (a->shape[i] != b->shape[i]) {
-      fprintf(stderr, "arrays must have the same shape for comparison\n");
-      exit(EXIT_FAILURE);
-    }
-  }
-  // converting both arrays to float32 for computation
-  float *a_float = convert_to_float32(a->data, a->dtype, a->size), *b_float = convert_to_float32(b->data, b->dtype, b->size);float* out = (float*)malloc(a->size * sizeof(float));
-  // perform the equality comparison
-  equal_array_ops(a_float, b_float, out, a->size);
-  // comparison operations always return boolean type
-  dtype_t result_dtype = DTYPE_BOOL;
-  Array* result = create_array(out, a->ndim, a->shape, a->size, result_dtype);
-  free(a_float);
-  free(b_float);
-  free(out);
-  return result;
-}
-
 Array* squeeze_array(Array* a, int axis) {
   if (a == NULL) {
     fprintf(stderr, "Array value pointers are null!\n");

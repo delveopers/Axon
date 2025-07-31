@@ -46,3 +46,11 @@ def linspace(start: float, step: float, end: float, *shape: Union[list, tuple], 
   s, sz, nd, sa = ShapeHelp.process_shape(shape)
   out = array(lib.linspace_array(c_float(start), c_float(step), c_float(end), sa, c_size_t(sz), c_size_t(nd), c_int(DtypeHelp._parse_dtype(dtype))).contents, DtypeHelp._parse_dtype(dtype))
   return (setattr(out, "shape", tuple(s)), setattr(out, "ndim", nd), setattr(out, "size", sz), setattr(out, "strides", ShapeHelp.get_strides(s)), out)[4]
+
+def arange(start: float, stop: float, step: float = 1.0, dtype: str = "float32") -> array:
+  if step == 0.0: raise ValueError("Step cannot be zero")
+  if (step > 0 and start >= stop) or (step < 0 and start <= stop): raise ValueError("Invalid arange parameters: no values in range")
+  c_array = lib.arange_array(c_float(start), c_float(stop), c_float(step), c_int(DtypeHelp._parse_dtype(dtype)))
+  sz = lib.out_size(c_array)
+  out = array(c_array.contents, DtypeHelp._parse_dtype(dtype))
+  return (setattr(out, "shape", (sz,)), setattr(out, "ndim", 1), setattr(out, "size", sz), setattr(out, "strides", ShapeHelp.get_strides((sz,))), out)[4]
