@@ -8,54 +8,142 @@
 #include "ops_shape.h"
 
 static void compute_svd(float* a, float* u, float* s, float* vt, int m, int n) {
-  int min_mn = (m < n) ? m : n, max_mn = (m > n) ? m : n;
-  float *at = (float*)malloc(n * m * sizeof(float)), *aat = (float*)malloc(m * m * sizeof(float));
-  float *ata = (float*)malloc(n * n * sizeof(float)), *temp = (float*)malloc(max_mn * max_mn * sizeof(float));
-  for (int i = 0; i < m; ++i) {
-    for (int j = 0; j < n; ++j) at[j * m + i] = a[i * n + j];
-  }
-
+  int min_mn = (m < n) ? m : n;
+  float *aat = (float*)malloc(m * m * sizeof(float)), *ata = (float*)malloc(n * n * sizeof(float)), *temp_u = (float*)malloc(m * m * sizeof(float)), *temp_v = (float*)malloc(n * n * sizeof(float));
   for (int i = 0; i < m; ++i) {
     for (int j = 0; j < m; ++j) {
       aat[i * m + j] = 0.0f;
       for (int k = 0; k < n; ++k) aat[i * m + j] += a[i * n + k] * a[j * n + k];
     }
   }
-  
+
   for (int i = 0; i < n; ++i) {
     for (int j = 0; j < n; ++j) {
       ata[i * n + j] = 0.0f;
       for (int k = 0; k < m; ++k) ata[i * n + j] += a[k * n + i] * a[k * n + j];
     }
   }
-  eigenvecs_h_ops_array(aat, u, m);
-  eigenvecs_h_ops_array(ata, temp, n);
-  for (int i = 0; i < n; ++i) {
-    for (int j = 0; j < n; ++j) vt[i * n + j] = temp[j * n + i];
-  }
-
   float *eigenvals_u = (float*)malloc(m * sizeof(float)), *eigenvals_v = (float*)malloc(n * sizeof(float));
+  eigenvecs_h_ops_array(aat, temp_u, m);
   eigenvals_h_ops_array(aat, eigenvals_u, m);
+  eigenvecs_h_ops_array(ata, temp_v, n);
   eigenvals_h_ops_array(ata, eigenvals_v, n);
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) vt[i * n + j] = temp_v[j * n + i];
+  }
 
   for (int i = 0; i < min_mn; ++i) {
-    float val = (i < m) ? eigenvals_u[m - 1 - i] : 0.0f;
+    float val = (i < n) ? eigenvals_v[n - 1 - i] : 0.0f;
     s[i] = (val > 1e-12f) ? sqrtf(val) : 0.0f;
   }
+
+  for (int i = 0; i < m; ++i) {
+    for (int j = 0; j < m; ++j) u[i * m + j] = temp_u[i * m + (m - 1 - j)];
+  }
   
-  for (int col = 0; col < min_mn; ++col) {
-    if (s[col] > 1e-12f) {
-      for (int row = 0; row < m; ++row) {
-        float sum = 0.0f;
-        for (int k = 0; k < n; ++k) sum += a[row * n + k] * vt[col * n + k];
-        u[row * m + col] = sum / s[col];
+  for (int i = 0; i < min_mn - 1; ++i) {
+    for (int j = i + 1; j < min_mn; ++j) {
+      if (s[i] < s[j]) {
+        float temp_s = s[i]; s[i] = s[j]; s[j] = temp_s;
+        for (int k = 0; k < m; ++k) {
+          float temp_u_val = u[k * m + i]; u[k * m + i] = u[k * m + j]; u[k * m + j] = temp_u_val;
+        }
+        for (int k = 0; k < n; ++k) {
+          float temp_v_val = vt[i * n + k]; vt[i * n + k] = vt[j * n + k]; vt[j * n + k] = temp_v_val;
+        }
       }
     }
   }
 
-  free(at); free(aat);
-  free(ata); free(temp);
-  free(eigenvals_u); free(eigenvals_v);
+  for (int j = 0; j < min_mn; ++j) {
+    if (u[0 * m + j] > 0.0f) {
+      for (int i = 0; i < m; ++i) u[i * m + j] *= -1.0f;
+    }
+  }
+  free(aat); free(ata); free(temp_u); free(temp_v); free(eigenvals_u); free(eigenvals_v);
+}
+
+static void compute_eigenvecs_h(float* a, float* eigenvecs, size_t size) {
+  float *temp;
+  size_t i, j, k, iter, mat_size = size * size;
+  temp = (float*)malloc(mat_size * sizeof(float));
+  if (!temp) { 
+    for (i = 0; i < mat_size; ++i) eigenvecs[i] = 0.0f; 
+    return; 
+  }
+  for (i = 0; i < mat_size; ++i) {
+    temp[i] = a[i];
+    eigenvecs[i] = 0.0f;
+  }
+  for (i = 0; i < size; ++i) eigenvecs[i * size + i] = 1.0f;
+  for (iter = 0; iter < 1000; ++iter) {
+    float max_val = 0.0f;
+    size_t p = 0, q = 1;
+    for (i = 0; i < size; ++i) {
+      for (j = i + 1; j < size; ++j) {
+        float val = fabsf(temp[i * size + j]);
+        if (val > max_val) {
+          max_val = val;
+          p = i; q = j;
+        }
+      }
+    }
+    if (max_val < 1e-14f) break;
+    float app = temp[p * size + p], aqq = temp[q * size + q], apq = temp[p * size + q];
+    float theta, t, c, s;
+    if (fabsf(apq) < 1e-15f) {
+      c = 1.0f; s = 0.0f;
+    } else {
+      theta = (aqq - app) / (2.0f * apq);
+      t = (theta >= 0.0f) ? 1.0f / (theta + sqrtf(theta * theta + 1.0f)) : 1.0f / (theta - sqrtf(theta * theta + 1.0f));
+      c = 1.0f / sqrtf(t * t + 1.0f);
+      s = t * c;
+    }
+    for (k = 0; k < size; ++k) {
+      if (k != p && k != q) {
+        float akp = temp[k * size + p], akq = temp[k * size + q];
+        temp[k * size + p] = temp[p * size + k] = c * akp - s * akq;
+        temp[k * size + q] = temp[q * size + k] = s * akp + c * akq;
+      }
+    }
+    temp[p * size + p] = c * c * app + s * s * aqq - 2.0f * s * c * apq;
+    temp[q * size + q] = s * s * app + c * c * aqq + 2.0f * s * c * apq;
+    temp[p * size + q] = temp[q * size + p] = 0.0f;
+    for (k = 0; k < size; ++k) {
+      float vkp = eigenvecs[k * size + p], vkq = eigenvecs[k * size + q];
+      eigenvecs[k * size + p] = c * vkp - s * vkq;
+      eigenvecs[k * size + q] = s * vkp + c * vkq;
+    }
+  }
+  float* eigenvals = (float*)malloc(size * sizeof(float));
+  size_t* indices = (size_t*)malloc(size * sizeof(size_t));
+  for (i = 0; i < size; ++i) {
+    eigenvals[i] = temp[i * size + i];
+    indices[i] = i;
+  }
+  for (i = 0; i < size - 1; ++i) {
+    for (j = i + 1; j < size; ++j) {
+      if (eigenvals[indices[i]] > eigenvals[indices[j]]) {
+        size_t tmp_idx = indices[i];
+        indices[i] = indices[j];
+        indices[j] = tmp_idx;
+      }
+    }
+  }
+  float* temp_vecs = (float*)malloc(mat_size * sizeof(float));
+  for (i = 0; i < mat_size; ++i) temp_vecs[i] = eigenvecs[i];
+  for (j = 0; j < size; ++j) {
+    size_t src_col = indices[j];
+    for (i = 0; i < size; ++i) eigenvecs[i * size + j] = temp_vecs[i * size + src_col];
+  }
+
+  for (j = 0; j < size; ++j) {
+    if (eigenvecs[0 * size + j] < 0.0f) {
+      for (i = 0; i < size; ++i) eigenvecs[i * size + j] *= -1.0f;
+    }
+  }
+
+  free(eigenvals); free(indices); free(temp_vecs); free(temp);
 }
 
 static void compute_chol(float* a, float* l, int n) {
@@ -388,92 +476,6 @@ static void compute_eigenvals_h(float* a, float* eigenvals, size_t size) {
       }
     }
   }
-  free(temp);
-}
-
-static void compute_eigenvecs_h(float* a, float* eigenvecs, size_t size) {
-  float *temp;
-  size_t i, j, k, iter, mat_size = size * size;
-  temp = (float*)malloc(mat_size * sizeof(float));
-  if (!temp) { 
-    for (i = 0; i < mat_size; ++i) eigenvecs[i] = 0.0f; 
-    return; 
-  }
-  for (i = 0; i < mat_size; ++i) {
-    temp[i] = a[i];
-    eigenvecs[i] = 0.0f;
-  }
-  for (i = 0; i < size; ++i) eigenvecs[i * size + i] = 1.0f;
-  for (iter = 0; iter < 1000; ++iter) {
-    float max_val = 0.0f;
-    size_t p = 0, q = 1;
-    for (i = 0; i < size; ++i) {
-      for (j = i + 1; j < size; ++j) {
-        float val = fabsf(temp[i * size + j]);
-        if (val > max_val) {
-          max_val = val;
-          p = i; q = j;
-        }
-      }
-    }
-    if (max_val < 1e-14f) break;
-    float app = temp[p * size + p], aqq = temp[q * size + q], apq = temp[p * size + q];
-    float theta, t, c, s;
-    if (fabsf(apq) < 1e-15f) {
-      c = 1.0f; s = 0.0f;
-    } else {
-      theta = (aqq - app) / (2.0f * apq);
-      t = (theta >= 0.0f) ? 1.0f / (theta + sqrtf(theta * theta + 1.0f)) : 1.0f / (theta - sqrtf(theta * theta + 1.0f));
-      c = 1.0f / sqrtf(t * t + 1.0f);
-      s = t * c;
-    }
-    for (k = 0; k < size; ++k) {
-      if (k != p && k != q) {
-        float akp = temp[k * size + p], akq = temp[k * size + q];
-        temp[k * size + p] = temp[p * size + k] = c * akp - s * akq;
-        temp[k * size + q] = temp[q * size + k] = s * akp + c * akq;
-      }
-    }
-    temp[p * size + p] = c * c * app + s * s * aqq - 2.0f * s * c * apq;
-    temp[q * size + q] = s * s * app + c * c * aqq + 2.0f * s * c * apq;
-    temp[p * size + q] = temp[q * size + p] = 0.0f;
-    for (k = 0; k < size; ++k) {
-      float vkp = eigenvecs[k * size + p], vkq = eigenvecs[k * size + q];
-      eigenvecs[k * size + p] = c * vkp - s * vkq;
-      eigenvecs[k * size + q] = s * vkp + c * vkq;
-    }
-  }
-  float* eigenvals = (float*)malloc(size * sizeof(float));
-  size_t* indices = (size_t*)malloc(size * sizeof(size_t));
-  for (i = 0; i < size; ++i) {
-    eigenvals[i] = temp[i * size + i];
-    indices[i] = i;
-  }
-  for (i = 0; i < size - 1; ++i) {
-    for (j = i + 1; j < size; ++j) {
-      if (eigenvals[indices[i]] > eigenvals[indices[j]]) {
-        size_t tmp_idx = indices[i];
-        indices[i] = indices[j];
-        indices[j] = tmp_idx;
-      }
-    }
-  }
-  float* temp_vecs = (float*)malloc(mat_size * sizeof(float));
-  for (i = 0; i < mat_size; ++i) temp_vecs[i] = eigenvecs[i];
-  for (j = 0; j < size; ++j) {
-    size_t src_col = indices[j];
-    for (i = 0; i < size; ++i) {
-      float val = temp_vecs[i * size + src_col];
-      if (j == 0 && val < 0.0f) {
-        for (k = 0; k < size; ++k) temp_vecs[k * size + src_col] *= -1.0f;
-        val *= -1.0f;
-      }
-      eigenvecs[i * size + j] = val;
-    }
-  }
-  free(eigenvals);
-  free(indices);
-  free(temp_vecs);
   free(temp);
 }
 

@@ -42,12 +42,15 @@ def qr(a: array, dtype: DType = 'float32') -> array:
   q_out, r_out = array(result_ptr[0].contents, dtype or a.dtype), array(result_ptr[1].contents, dtype or a.dtype)
   for out, shape, size in [(q_out, q_shape, q_size), (r_out, r_shape, r_size)]:
     out.shape, out.ndim, out.size, out.strides = shape, len(shape), size, ShapeHelp.get_strides(shape)
-  return [-q_out, -r_out]
+  return [q_out, r_out]
 
 def svd(a: array, dtype: DType = 'float32') -> array:
   a = a if isinstance(a, array) else array(a, 'float32')
-  result_ptr = lib.svd_array(a.data)
-  u_ptr, s_ptr, vt_ptr = result_ptr[0].contents, result_ptr[1].ptr, result_ptr[2].ptr
+  result_tuple = lib.svd_array(a.data)
+
+  u_ptr = result_tuple[0].contents
+  s_ptr = result_tuple[1].contents
+  vt_ptr = result_tuple[2].contents
   u, s, vt = array(u_ptr, dtype if dtype else a.dtype), array(s_ptr, dtype if dtype else a.dtype), array(vt_ptr, dtype if dtype else a.dtype)
   m, n = a.shape[-2], a.shape[-1]
   min_mn = min(m, n)
