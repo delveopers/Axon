@@ -4,6 +4,8 @@
 #include <stddef.h>
 
 extern "C" {
+  void det_ops_array(float* a, float* out, size_t size);
+  void batched_det_ops(float* a, float* out, size_t size, size_t batch);
   void inv_ops(float* a, float* out, int* shape);
   void batched_inv_ops(float* a, float* out, int* shape, int ndim);
   void matrix_rank_ops(float* a, float* out, int* shape);

@@ -7,46 +7,124 @@
 #include "ops_array.h"
 #include "ops_shape.h"
 
-void det_ops_array(float* a, float* out, size_t size) {
-  float det = 1.0f;
-  float* temp = (float*)malloc(size * size * sizeof(float));
-  if (!temp) { *out = 0.0f; return; }
-  for (size_t i = 0; i < size * size; ++i) temp[i] = a[i];
-  for (size_t i = 0; i < size; ++i) {   // gaussian elimination with partial pivoting
-    // finding pivot
-    size_t pivot_row = i;
-    float max_val = fabsf(temp[i * size + i]);
-    for (size_t row = i + 1; row < size; ++row) {
-      float val = fabsf(temp[row * size + i]);
-      if (val > max_val) { max_val = val; pivot_row = row; }
-    }
-    // swapping rows if needed
-    if (pivot_row != i) {
-      for (size_t col = 0; col < size; ++col) {
-        float tmp = temp[i * size + col];
-        temp[i * size + col] = temp[pivot_row * size + col];
-        temp[pivot_row * size + col] = tmp;
-      }
-      det = -det; // row swap changes sign
-    }
-    float pivot = temp[i * size + i];
-    if (fabsf(pivot) < 1e-6f) { det = 0.0f; break; }
-    det *= pivot;
-    // eliminating column
-    for (size_t j = i + 1; j < size; ++j) {
-      float factor = temp[j * size + i] / pivot;
-      for (size_t k = i; k < size; ++k) temp[j * size + k] -= factor * temp[i * size + k];
+static void compute_svd(float* a, float* u, float* s, float* vt, int m, int n) {
+  int min_mn = (m < n) ? m : n, max_mn = (m > n) ? m : n;
+  float *at = (float*)malloc(n * m * sizeof(float)), *aat = (float*)malloc(m * m * sizeof(float));
+  float *ata = (float*)malloc(n * n * sizeof(float)), *temp = (float*)malloc(max_mn * max_mn * sizeof(float));
+  for (int i = 0; i < m; ++i) {
+    for (int j = 0; j < n; ++j) at[j * m + i] = a[i * n + j];
+  }
+
+  for (int i = 0; i < m; ++i) {
+    for (int j = 0; j < m; ++j) {
+      aat[i * m + j] = 0.0f;
+      for (int k = 0; k < n; ++k) aat[i * m + j] += a[i * n + k] * a[j * n + k];
     }
   }
-  free(temp);
-  *out = det;
+  
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) {
+      ata[i * n + j] = 0.0f;
+      for (int k = 0; k < m; ++k) ata[i * n + j] += a[k * n + i] * a[k * n + j];
+    }
+  }
+  eigenvecs_h_ops_array(aat, u, m);
+  eigenvecs_h_ops_array(ata, temp, n);
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) vt[i * n + j] = temp[j * n + i];
+  }
+
+  float *eigenvals_u = (float*)malloc(m * sizeof(float)), *eigenvals_v = (float*)malloc(n * sizeof(float));
+  eigenvals_h_ops_array(aat, eigenvals_u, m);
+  eigenvals_h_ops_array(ata, eigenvals_v, n);
+
+  for (int i = 0; i < min_mn; ++i) {
+    float val = (i < m) ? eigenvals_u[m - 1 - i] : 0.0f;
+    s[i] = (val > 1e-12f) ? sqrtf(val) : 0.0f;
+  }
+  
+  for (int col = 0; col < min_mn; ++col) {
+    if (s[col] > 1e-12f) {
+      for (int row = 0; row < m; ++row) {
+        float sum = 0.0f;
+        for (int k = 0; k < n; ++k) sum += a[row * n + k] * vt[col * n + k];
+        u[row * m + col] = sum / s[col];
+      }
+    }
+  }
+
+  free(at); free(aat);
+  free(ata); free(temp);
+  free(eigenvals_u); free(eigenvals_v);
 }
 
-void batched_det_ops(float* a, float* out, size_t size, size_t batch) {
-  size_t mat_size = size * size;
-  for (size_t b = 0; b < batch; ++b) {
-    float* mat = &a[b * mat_size];
-    det_ops_array(mat, &out[b], size);
+static void compute_chol(float* a, float* l, int n) {
+  memset(l, 0, n * n * sizeof(float));
+
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j <= i; ++j) {
+      if (i == j) {
+        float sum = 0.0f;
+        for (int k = 0; k < j; ++k) sum += l[i * n + k] * l[i * n + k];
+        float val = a[i * n + i] - sum;
+        if (val <= 1e-12f) {
+          l[i * n + j] = 0.0f;
+          return;
+        }
+        l[i * n + j] = sqrtf(val);
+      } else {
+        float sum = 0.0f;
+        for (int k = 0; k < j; ++k) sum += l[i * n + k] * l[j * n + k];
+        if (fabsf(l[j * n + j]) < 1e-12f) l[i * n + j] = 0.0f;
+        else l[i * n + j] = (a[i * n + j] - sum) / l[j * n + j];
+      }
+    }
+  }
+}
+
+void svd_ops(float* a, float* u, float* s, float* vt, int* shape) {
+  int m = shape[0], n = shape[1];
+  compute_svd(a, u, s, vt, m, n);
+}
+
+void batched_svd_ops(float* a, float* u, float* s, float* vt, int* shape, int ndim) {
+  if (ndim < 2) {
+    fprintf(stderr, "error: svd requires at least 2 dimensions\n");
+    exit(EXIT_FAILURE);
+  }
+
+  int m = shape[ndim - 2], n = shape[ndim - 1];
+  int min_mn = (m < n) ? m : n, batch_size = 1;
+  for (int i = 0; i < ndim - 2; i++) batch_size *= shape[i];
+
+  int a_matrix_size = m * n, u_matrix_size = m * m, s_vector_size = min_mn, vt_matrix_size = n * n;  
+  for (int batch = 0; batch < batch_size; batch++) {
+    float *a_batch = a + batch * a_matrix_size, *u_batch = u + batch * u_matrix_size;
+    float *s_batch = s + batch * s_vector_size, *vt_batch = vt + batch * vt_matrix_size;
+    int matrix_shape[2] = {m, n};
+    svd_ops(a_batch, u_batch, s_batch, vt_batch, matrix_shape);
+  }
+}
+
+void chol_ops(float* a, float* l, int* shape) {
+  int n = shape[0];
+  compute_chol(a, l, n);
+}
+
+void batched_chol_ops(float* a, float* l, int* shape, int ndim) {
+  if (ndim < 2) {
+    fprintf(stderr, "error: cholesky decomposition requires at least 2 dimensions\n");
+    exit(EXIT_FAILURE);
+  }
+
+  int n = shape[ndim - 1], batch_size = 1;
+  for (int i = 0; i < ndim - 2; i++) batch_size *= shape[i];
+  int matrix_size = n * n;
+
+  for (int batch = 0; batch < batch_size; batch++) {
+    float *a_batch = a + batch * matrix_size, *l_batch = l + batch * matrix_size;
+    int matrix_shape[2] = {n, n};
+    chol_ops(a_batch, l_batch, matrix_shape);
   }
 }
 
