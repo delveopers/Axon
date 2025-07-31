@@ -94,6 +94,7 @@ _vector_funcs = {
   'lu_array': ([POINTER(CArray)], POINTER(POINTER(CArray))), 'batched_lu_array': ([POINTER(CArray)], POINTER(POINTER(CArray))),
   'inv_array': ([POINTER(CArray)], POINTER(CArray)), 'matrix_rank_array': ([POINTER(CArray)], POINTER(CArray)),
   'solve_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'lstsq_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'svd_array': ([POINTER(CArray)], POINTER(POINTER(CArray))), 'cholesky_array': ([POINTER(CArray)], POINTER(CArray))
 }
 
 for name, (argtypes, restype) in _array_funcs.items(): _setup_func(name, argtypes, restype)

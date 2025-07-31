@@ -5,8 +5,8 @@
 #include "../core/dtype.h"
 
 extern "C" {
-  Array* svd_array(Array* a);
-  Array* chol_array(Array* a);
+  Array** svd_array(Array* a);
+  Array* cholesky_array(Array* a);
   Array* eig_array(Array* a);        // eigen values
   Array* eigv_array(Array* a);        // eigen vectors
   Array* eigh_array(Array* a);        // eigen hermitian values

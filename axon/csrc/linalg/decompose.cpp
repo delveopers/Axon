@@ -3,11 +3,7 @@
 #include "../cpu/ops_decomp.h"
 #include "decompose.h"
 
-Array* svd_array(Array* a) {
-  if (a == NULL) {
-    fprintf(stderr, "Input array cannot be null!\n");
-    exit(EXIT_FAILURE);
-  }
+Array** svd_array(Array* a) {
   if (a->ndim < 2) {
     fprintf(stderr, "Input array must be at least 2D for SVD\n");
     exit(EXIT_FAILURE);
@@ -33,17 +29,13 @@ Array* svd_array(Array* a) {
   Array* vt_result = create_array(vt, a->ndim, vt_shape, vt_size, a->dtype);
   free(a_float); free(u); free(s); free(vt);
   free(u_shape); free(s_shape); free(vt_shape);
-  Array* result = (Array*)malloc(3 * sizeof(Array));
-  result[0] = *u_result; result[1] = *s_result; result[2] = *vt_result;
+  Array** result = (Array**)malloc(3 * sizeof(Array*));
+  result[0] = u_result; result[1] = s_result; result[2] = vt_result;
   free(u_result); free(s_result); free(vt_result);
   return result;
 }
 
-Array* chol_array(Array* a) {
-  if (a == NULL) {
-    fprintf(stderr, "Input array cannot be null!\n");
-    exit(EXIT_FAILURE);
-  }
+Array* cholesky_array(Array* a) {
   if (a->ndim < 2) {
     fprintf(stderr, "Input array must be at least 2D for Cholesky decomposition\n");
     exit(EXIT_FAILURE);
