@@ -3,7 +3,7 @@ requires = ["scikit-build-core", "cmake>=3.18", "ninja"]
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "axon-py"
+name = "axon-pypi"
 version = "0.0.2"
 description = "Multi-dimensional tensor library with custom C/C++ backend and Python frontend"
 readme = "README.md"
