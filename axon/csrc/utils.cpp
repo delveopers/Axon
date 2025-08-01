@@ -106,7 +106,8 @@ Array* linspace_array(float start, float step, float end, int* shape, size_t siz
     fprintf(stderr, "Memory allocation failed\n");
     exit(EXIT_FAILURE);
   }
-  float step_size = (step > 1) ? (end - start) / (step - 1) : 0.0f;
+  // float step_size = (step > 1) ? (end - start) / (step - 1) : 0.0f;
+  float step_size = (size > 1) ? (end - start) / (size - 1) : 0.0f;
   linspace_array_ops(out, start, step_size, size);
   Array* result = create_array(out, ndim, shape, size, dtype);
   free(out);

@@ -4,10 +4,6 @@
 #include "vector.h"
 
 Array* vector_dot(Array* a, Array* b) {
-  if (a == NULL || b == NULL) {
-    fprintf(stderr, "Arrays cannot be null!\n");
-    exit(EXIT_FAILURE);
-  }
   if (a->ndim != 1 || b->ndim != 1) {
     fprintf(stderr, "Only 1D arrays supported for dot product\n");
     exit(EXIT_FAILURE);
@@ -20,56 +16,60 @@ Array* vector_dot(Array* a, Array* b) {
   shape[0] = 1;
   float *a_float = convert_to_float32(a->data, a->dtype, a->size), *b_float = convert_to_float32(b->data, b->dtype, b->size);
   float* out = (float*)malloc(1 * sizeof(float));
-  if (a_float == NULL || b_float == NULL || out == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion");
-    if (a_float) free(a_float);
-    if (b_float) free(b_float);
-    if (out) free(out);
-    exit(EXIT_FAILURE);
-  }
-
   vector_dot_ops(a_float, b_float, out, a->size);
   Array* result = create_array(out, 1, shape, 1, a->dtype);
   free(a_float); free(b_float); free(out); free(shape);
   return result;
 }
 
-Array* vector_matrix_dot(Array* vec, Array* mat) {
-  if (vec == NULL || mat == NULL) {
-    fprintf(stderr, "Arrays cannot be null!\n");
+Array* vector_matrix_dot(Array* a, Array* b) {
+  // Check if one is 1D and other is 2D
+  if (!((a->ndim == 1 && b->ndim == 2) || (a->ndim == 2 && b->ndim == 1))) {
+    fprintf(stderr, "One array must be 1D (vector) and other must be 2D (matrix)\n");
     exit(EXIT_FAILURE);
   }
-  if (vec->ndim != 1 || mat->ndim != 2) {
-    fprintf(stderr, "Vector must be 1D and matrix must be 2D for vector-matrix dot product\n");
-    exit(EXIT_FAILURE);
-  }
-  if (vec->shape[0] != mat->shape[1]) {
-    fprintf(stderr, "Vector size must match matrix rows. vec_size '%d' != mat_rows '%d'\n", vec->shape[0], mat->shape[0]);
-    exit(EXIT_FAILURE);
-  }
-  int* shape = (int*)malloc(1 * sizeof(int));
-  shape[0] = mat->shape[1];
-  float *vec_float = convert_to_float32(vec->data, vec->dtype, vec->size), *mat_float = convert_to_float32(mat->data, mat->dtype, mat->size);
-  float* out = (float*)malloc(mat->shape[1] * sizeof(float));
-  if (vec_float == NULL || mat_float == NULL || out == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion");
-    if (vec_float) free(vec_float);
-    if (mat_float) free(mat_float);
-    if (out) free(out);
-    exit(EXIT_FAILURE);
+  Array *vec, *mat;
+  int is_matrix_vector = 0;  // 0 = vector-matrix, 1 = matrix-vector
+  if (a->ndim == 1 && b->ndim == 2) {
+    // vector-matrix: vec @ mat
+    vec = a, mat = b, is_matrix_vector = 0;
+    if (vec->shape[0] != mat->shape[0]) {
+      fprintf(stderr, "Vector size must match matrix rows. vec_size '%d' != mat_rows '%d'\n", vec->shape[0], mat->shape[0]);
+      exit(EXIT_FAILURE);
+    }
+  } else {
+    // matrix-vector: mat @ vec
+    mat = a, vec = b, is_matrix_vector = 1;
+    if (mat->shape[1] != vec->shape[0]) {
+      fprintf(stderr, "Matrix columns must match vector size. mat_cols '%d' != vec_size '%d'\n", mat->shape[1], vec->shape[0]);
+      exit(EXIT_FAILURE);
+    }
   }
 
-  vector_matrix_dot_ops(vec_float, mat_float, out, vec->size, mat->size);
-  Array* result = create_array(out, 1, shape, mat->shape[1], vec->dtype);
+  int* shape = (int*)malloc(1 * sizeof(int));
+  int output_size;
+  if (is_matrix_vector) {
+    // matrix-vector: output size = number of matrix rows
+    output_size = mat->shape[0];
+    shape[0] = mat->shape[0];
+  } else {
+    // vector-matrix: output size = number of matrix columns
+    output_size = mat->shape[1];
+    shape[0] = mat->shape[1];
+  }
+  float *vec_float = convert_to_float32(vec->data, vec->dtype, vec->size), *mat_float = convert_to_float32(mat->data, mat->dtype, mat->size), * out = (float*)malloc(output_size * sizeof(float));
+  if (is_matrix_vector) {
+    matrix_vector_dot_ops(mat_float, vec_float, out, mat->size, vec->size);
+  } else {
+    vector_matrix_dot_ops(vec_float, mat_float, out, vec->size, mat->size);
+  }
+  dtype_t result_dtype = promote_dtypes(a->dtype, b->dtype);
+  Array* result = create_array(out, 1, shape, output_size, result_dtype);
   free(vec_float); free(mat_float); free(out); free(shape);
   return result;
 }
 
 Array* vector_inner(Array* a, Array* b) {
-  if (a == NULL || b == NULL) {
-    fprintf(stderr, "Arrays cannot be null!\n");
-    exit(EXIT_FAILURE);
-  }
   if (a->ndim != 1 || b->ndim != 1) {
     fprintf(stderr, "Only 1D arrays supported for inner product\n");
     exit(EXIT_FAILURE);
@@ -82,14 +82,6 @@ Array* vector_inner(Array* a, Array* b) {
   shape[0] = 1;
   float *a_float = convert_to_float32(a->data, a->dtype, a->size), *b_float = convert_to_float32(b->data, b->dtype, b->size);
   float* out = (float*)malloc(1 * sizeof(float));
-  if (a_float == NULL || b_float == NULL || out == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion");
-    if (a_float) free(a_float);
-    if (b_float) free(b_float);
-    if (out) free(out);
-    exit(EXIT_FAILURE);
-  }
-
   vector_inner_product_ops(a_float, b_float, out, a->size);
   Array* result = create_array(out, 1, shape, 1, a->dtype);
   free(a_float); free(b_float); free(out); free(shape);
@@ -97,10 +89,6 @@ Array* vector_inner(Array* a, Array* b) {
 }
 
 Array* vector_outer(Array* a, Array* b) {
-  if (a == NULL || b == NULL) {
-    fprintf(stderr, "Arrays cannot be null!\n");
-    exit(EXIT_FAILURE);
-  }
   if (a->ndim != 1 || b->ndim != 1) {
     fprintf(stderr, "Only 1D arrays supported for outer product\n");
     exit(EXIT_FAILURE);
@@ -109,14 +97,6 @@ Array* vector_outer(Array* a, Array* b) {
   shape[0] = a->shape[0]; shape[1] = b->shape[0];
   float *a_float = convert_to_float32(a->data, a->dtype, a->size), *b_float = convert_to_float32(b->data, b->dtype, b->size);
   float* out = (float*)malloc(a->shape[0] * b->shape[0] * sizeof(float));
-  if (a_float == NULL || b_float == NULL || out == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion");
-    if (a_float) free(a_float);
-    if (b_float) free(b_float);
-    if (out) free(out);
-    exit(EXIT_FAILURE);
-  }
-
   vector_outer_product_ops(a_float, b_float, out, a->shape[0], b->shape[0]);
   Array* result = create_array(out, 2, shape, a->shape[0] * b->shape[0], a->dtype);
   free(a_float); free(b_float); free(out); free(shape);
@@ -124,15 +104,10 @@ Array* vector_outer(Array* a, Array* b) {
 }
 
 Array* vector_cross_axis(Array* a, Array* b, int axis) {
-  if (a == NULL || b == NULL) {
-    fprintf(stderr, "Arrays cannot be null!\n");
-    exit(EXIT_FAILURE);
-  }
   if (a->ndim != b->ndim) {
     fprintf(stderr, "Arrays must have same number of dimensions for cross product\n");
     exit(EXIT_FAILURE);
   }
-
   // Validate axis bounds
   if (axis < 0) axis = a->ndim + axis;
   if (axis < 0 || axis >= a->ndim) {
@@ -167,16 +142,6 @@ Array* vector_cross_axis(Array* a, Array* b, int axis) {
   // For 2D cross product, we need to remove the axis dimension
   if (a->shape[axis] == 2) { out_size /= 1; }  // Adjust for the removed dimension
   float* out = (float*)malloc(out_size * sizeof(float));
-  if (a_float == NULL || b_float == NULL || out == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
-    if (a_float) free(a_float);
-    if (b_float) free(b_float);
-    if (out) free(out);
-    if (out_shape) free(out_shape);
-    exit(EXIT_FAILURE);
-  }
-
-  // calculating strides
   size_t* strides = (size_t*)malloc(a->ndim * sizeof(size_t));
   strides[a->ndim - 1] = 1;
   for (int i = a->ndim - 2; i >= 0; i--) { strides[i] = strides[i + 1] * a->shape[i + 1]; }
@@ -207,10 +172,6 @@ Array* vector_cross_axis(Array* a, Array* b, int axis) {
 }
 
 Array* vector_cross(Array* a, Array* b) {
-  if (a == NULL || b == NULL) {
-    fprintf(stderr, "Arrays cannot be null!\n");
-    exit(EXIT_FAILURE);
-  }
   if (a->ndim != b->ndim) {
     fprintf(stderr, "Arrays must have same number of dimensions for cross product\n");
     exit(EXIT_FAILURE);

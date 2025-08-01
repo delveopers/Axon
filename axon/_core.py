@@ -68,8 +68,8 @@ class array:
   def squeeze(self, axis: int = -1) -> "array": return squeeze_array_ops(self, axis)
   def expand_dims(self, axis: int) -> "array": return expand_dims_ops(self, axis)
   def flatten(self) -> "array": return flatten_array_ops(self)
-  def clip(self, max:float): return clip_norm_ops(self, max)
-  def clamp(self, max:float, min: float): return clip_norm_ops(self, max, min)
+  def clip(self, max: float): return clip_norm_ops(self, max)
+  def clamp(self, max: float, min: float): return clamp_norm_ops(self, max, min)
   def sum(self, axis: int = -1, keepdims: bool = False) -> "array": return sum_array_ops(self, axis, keepdims)
   def mean(self, axis: int = -1, keepdims: bool = False) -> "array": return mean_array_ops(self, axis, keepdims)
   def max(self, axis: int = -1, keepdims: bool = False) -> "array": return max_array_ops(self, axis, keepdims)
@@ -77,32 +77,32 @@ class array:
   def var(self, axis: int = -1, ddof: int = 0) -> "array": return var_array_ops(self, axis, ddof)
   def std(self, axis: int = -1, ddof: int = 0) -> "array": return std_array_ops(self, axis, ddof)
   def __eq__(self, other) -> "array":
-    other = other if isinstance(other, (CArray, array)) else array(other)
-    if isinstance(other, (int, float)): out = array(lib.equal_array(self.data, c_float(other)).contents, DType.BOOL)
+    other = other if isinstance(other, (CArray, array)) or isinstance(other, (int, float)) else array(other)
+    if isinstance(other, (int, float)): out = array(lib.equal_scalar(self.data, c_float(other)).contents, DType.BOOL)
     else: out = array(lib.equal_array(self.data, other.data).contents, DType.BOOL)
     return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
   def __ne__(self, other) -> "array":
-    other = other if isinstance(other, (CArray, array)) else array(other)
-    if isinstance(other, (int, float)): out = array(lib.not_equal_array(self.data, c_float(other)).contents, DType.BOOL)
+    other = other if isinstance(other, (CArray, array)) or isinstance(other, (int, float)) else array(other)
+    if isinstance(other, (int, float)): out = array(lib.not_equal_scalar(self.data, c_float(other)).contents, DType.BOOL)
     else: out = array(lib.not_equal_array(self.data, other.data).contents, DType.BOOL)
     return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
   def __gt__(self, other) -> "array":
-    other = other if isinstance(other, (CArray, array)) else array(other)
-    if isinstance(other, (int, float)): out = array(lib.greater_array(self.data, c_float(other)).contents, DType.BOOL)
+    other = other if isinstance(other, (CArray, array)) or isinstance(other, (int, float)) else array(other)
+    if isinstance(other, (int, float)): out = array(lib.greater_scalar(self.data, c_float(other)).contents, DType.BOOL)
     else: out = array(lib.greater_array(self.data, other.data).contents, DType.BOOL)
     return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
   def __lt__(self, other) -> "array":
-    other = other if isinstance(other, (CArray, array)) else array(other)
-    if isinstance(other, (int, float)): out = array(lib.smaller_array(self.data, c_float(other)).contents, DType.BOOL)
+    other = other if isinstance(other, (CArray, array)) or isinstance(other, (int, float)) else array(other)
+    if isinstance(other, (int, float)): out = array(lib.smaller_scalar(self.data, c_float(other)).contents, DType.BOOL)
     else: out = array(lib.smaller_array(self.data, other.data).contents, DType.BOOL)
     return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
   def __ge__(self, other) -> "array":
-    other = other if isinstance(other, (CArray, array)) else array(other)
-    if isinstance(other, (int, float)): out = array(lib.greater_equal_array(self.data, c_float(other)).contents, DType.BOOL)
+    other = other if isinstance(other, (CArray, array)) or isinstance(other, (int, float)) else array(other)
+    if isinstance(other, (int, float)): out = array(lib.greater_equal_scalar(self.data, c_float(other)).contents, DType.BOOL)
     else: out = array(lib.greater_equal_array(self.data, other.data).contents, DType.BOOL)
     return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]
   def __le__(self, other) -> "array":
-    other = other if isinstance(other, (CArray, array)) else array(other)
-    if isinstance(other, (int, float)): out = array(lib.smaller_equal_array(self.data, c_float(other)).contents, DType.BOOL)
+    other = other if isinstance(other, (CArray, array)) or isinstance(other, (int, float)) else array(other)
+    if isinstance(other, (int, float)): out = array(lib.smaller_equal_scalar(self.data, c_float(other)).contents, DType.BOOL)
     else: out = array(lib.smaller_equal_array(self.data, other.data).contents, DType.BOOL)
     return (setattr(out, "shape", self.shape), setattr(out, "size", self.size), setattr(out, "ndim", self.ndim), setattr(out, "strides", self.strides), out)[4]

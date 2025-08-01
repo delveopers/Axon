@@ -98,52 +98,6 @@ void batched_inv_ops(float* a, float* out, int* shape, int ndim) {
   for (int b = 0; b < batch_size; b++) inv_ops(a + b * matrix_size, out + b * matrix_size, matrix_shape);
 }
 
-void matrix_rank_ops(float* a, float* out, int* shape) {
-  int m = shape[0], n = shape[1];
-  int size = m * n;
-
-  float* temp = (float*)malloc(n * n * 2 * sizeof(float));
-  memcpy(temp, a, size * sizeof(float));
-  int rank = 0;
-  float eps = 1e-10f;
-
-  for (int col = 0, row = 0; col < n && row < m; col++) {
-    int pivot = row;
-    for (int i = row + 1; i < m; i++) {
-      if (fabs(temp[i * n + col]) > fabs(temp[pivot * n + col])) pivot = i;
-    }
-    if (fabs(temp[pivot * n + col]) < eps) continue;
-    if (pivot != row) {
-      for (int j = 0; j < n; j++) {
-        float t = temp[row * n + j];
-        temp[row * n + j] = temp[pivot * n + j];
-        temp[pivot * n + j] = t;
-      }
-    }
-    rank++;
-    for (int i = row + 1; i < m; i++) {
-      if (fabs(temp[i * n + col]) > eps) {
-        float factor = temp[i * n + col] / temp[row * n + col];
-        for (int j = col; j < n; j++) temp[i * n + j] -= factor * temp[row * n + j];
-      }
-    }
-    row++;
-  }
-
-  *out = (float)rank;
-  free(temp);
-}
-
-void batched_matrix_rank_ops(float* a, float* out, int* shape, int ndim) {
-  if (ndim < 2) return;
-
-  int batch_size = 1;
-  for (int i = 0; i < ndim - 2; i++) batch_size *= shape[i];
-  int matrix_size = shape[ndim - 2] * shape[ndim - 1];
-  int matrix_shape[2] = {shape[ndim - 2], shape[ndim - 1]};
-  for (int b = 0; b < batch_size; b++) matrix_rank_ops(a + b * matrix_size, out + b, matrix_shape);
-}
-
 void solve_ops(float* a, float* b, float* out, int* shape_a, int* shape_b) {
   int n = shape_a[0];
   int nrhs = (shape_b[1] > 0) ? shape_b[1] : 1;

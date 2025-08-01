@@ -20,7 +20,7 @@ void max_array_ops(float* a, float* out, size_t size, int* shape, int* strides, 
     // calculate output size (product of all dimensions except the axis dimension)
     int out_size = 1;
     for (int i = 0; i < ndim; i++) { if (i != axis) { out_size *= shape[i]; } }
-    for (int i = 0; i < out_size; i++) { out[i] = INFINITY; } // initialize output tensor to positive infinity
+    for (int i = 0; i < out_size; i++) { out[i] = -INFINITY; } // initialize output tensor to positive infinity
     // iterate through all elements in the input tensor
     for (int i = 0; i < size; i++) {
       // convert linear index to multi-dimensional coordinates
