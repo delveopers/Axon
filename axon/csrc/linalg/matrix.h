@@ -8,7 +8,6 @@ extern "C" {
   Array* det_array(Array* a);
   Array* batched_det_array(Array* a);
   Array* inv_array(Array* a);
-  Array* matrix_rank_array(Array* a);
   Array* solve_array(Array* a, Array* b);
   Array* lstsq_array(Array* a, Array* b);
 }

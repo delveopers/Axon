@@ -5,7 +5,7 @@
 #include "contiguous.h"
 
 Array* create_array(float* data, size_t ndim, int* shape, size_t size, dtype_t dtype) {
-  if (data == NULL || !ndim || !size) {
+  if (data == NULL || !size) {
     fprintf(stderr, "Invalid input parameters!\n");
     exit(EXIT_FAILURE);
   }
@@ -15,48 +15,31 @@ Array* create_array(float* data, size_t ndim, int* shape, size_t size, dtype_t d
     fprintf(stderr, "Memory allocation failed for Array struct!\n");
     exit(EXIT_FAILURE);
   }
-  
+
   self->dtype = dtype;
   self->is_view = 0;
   self->ndim = ndim;
   self->size = size;
-  
-  // Allocate and convert to target dtype
-  self->data = allocate_dtype_array(dtype, size);
-  if (self->data == NULL) {
-    free(self);
-    exit(EXIT_FAILURE);
-  }
+  self->data = allocate_dtype_array(dtype, size); // allocating and convert to target dtype
   convert_from_float32(data, self->data, dtype, size);
-  
-  // Copy shape and calculate strides
-  self->shape = (int*)malloc(ndim * sizeof(int));
-  self->strides = (int*)malloc(sizeof(int) * ndim);
-  self->backstrides = (int*)malloc(sizeof(int) * ndim);
-  
-  if (!self->shape || !self->strides || !self->backstrides) {
-    // cleanup and exit
-    free(self->data);
-    if (self->shape) free(self->shape);
-    if (self->strides) free(self->strides);
-    if (self->backstrides) free(self->backstrides);
-    free(self);
-    exit(EXIT_FAILURE);
-  }
-  
-  for (size_t i = 0; i < ndim; i++) {
-    self->shape[i] = shape[i];
-  }
-  
-  int stride = 1;
-  for (int i = ndim-1; i >= 0; i--) {
-    self->strides[i] = stride;
-    stride *= shape[i];
-  }
-  for (size_t i = 0; i < ndim; i++) {
-    self->backstrides[ndim - 1 - i] = self->strides[i];
-  }
-  
+  // handling scalar case (ndim == 0)
+  if (ndim == 0) {
+    self->shape = NULL;
+    self->strides = NULL;
+    self->backstrides = NULL;
+  } else {
+    // copy shape and calculate strides for non-scalar arrays
+    self->shape = (int*)malloc(ndim * sizeof(int));
+    self->strides = (int*)malloc(sizeof(int) * ndim);
+    self->backstrides = (int*)malloc(sizeof(int) * ndim);
+    for (size_t i = 0; i < ndim; i++) self->shape[i] = shape[i];
+    int stride = 1;
+    for (int i = ndim-1; i >= 0; i--) {
+      self->strides[i] = stride;
+      stride *= shape[i];
+    }
+    for (size_t i = 0; i < ndim; i++) self->backstrides[ndim - 1 - i] = self->strides[i];
+  } 
   return self;
 }
 

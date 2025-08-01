@@ -1,5 +1,0 @@
-include LICENSE README.md CMakeLists.txt
-recursive-include axon/csrc *.c *.cpp *.h *.hpp
-recursive-include axon/inc *.h *.hpp
-recursive-include axon *.py
-global-exclude *.pyc __pycache__ build/ *.so *.dll *.dylib
