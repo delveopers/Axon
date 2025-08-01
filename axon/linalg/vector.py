@@ -56,7 +56,7 @@ def inv(a: array, dtype: DType = 'float32') -> array:
 
 def rank(a: array, dtype: DType = 'float32') -> array:
   a = a if isinstance(a, array) else array(a, 'float32')
-  ptr = lib.arix_rank_array(a.data).contents
+  ptr = lib.matrix_rank_array(a.data)[0].contents
   out = array(ptr, dtype if dtype is not None else a.dtype)
   return (setattr(out, "shape", ()), setattr(out, "ndim", 0), setattr(out, "size", 1), setattr(out, "strides", ()), out)[4]
 

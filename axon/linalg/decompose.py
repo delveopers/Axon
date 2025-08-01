@@ -8,7 +8,7 @@ def det(a: array, dtype: DType = 'float32') -> array:
   a = a if isinstance(a, array) else array(a, 'float32')
   if a.ndim == 2:
     ptr = lib.det_array(a.data).contents
-    out_shape, out_size, out_ndim, out_strides = (), 0, 1, ()
+    out_shape, out_size, out_ndim, out_strides = (), 1, 0, ()
   elif a.ndim == 3:
     ptr = lib.batched_det_array(a.data).contents
     out_shape, out_size, out_ndim, out_strides = a.shape[:-2], a.size // (a.shape[-1] * a.shape[-2]), a.ndim - 2, ShapeHelp.get_strides(a.shape[:-2])

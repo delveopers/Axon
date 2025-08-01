@@ -21,14 +21,6 @@ Array* det_array(Array* a) {
   shape[0] = 1;
   float* a_float = convert_to_float32(a->data, a->dtype, a->size);
   float* out = (float*)malloc(1 * sizeof(float));
-  if (a_float == NULL || out == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
-    if (a_float) free(a_float);
-    if (out) free(out);
-    if (shape) free(shape);
-    exit(EXIT_FAILURE);
-  }
-
   // Passing matrix dimension (shape[0]), not total size
   det_ops_array(a_float, out, a->shape[0]);
   Array* result = create_array(out, 1, shape, 1, a->dtype);
@@ -54,14 +46,6 @@ Array* batched_det_array(Array* a) {
   shape[0] = a->shape[0]; // Output should have batch size
   float* a_float = convert_to_float32(a->data, a->dtype, a->size);
   float* out = (float*)malloc(a->shape[0] * sizeof(float)); // allocating for batch size
-  if (a_float == NULL || out == NULL) {
-    fprintf(stderr, "Memory allocation failed during dtype conversion\n");
-    if (a_float) free(a_float);
-    if (out) free(out);
-    if (shape) free(shape);
-    exit(EXIT_FAILURE);
-  }
-
   // Pass matrix dimension (shape[1])
   batched_det_ops(a_float, out, a->shape[1], a->shape[0]);
   Array* result = create_array(out, 1, shape, a->shape[0], a->dtype);
@@ -86,8 +70,8 @@ Array* inv_array(Array* a) {
   for (size_t i = 0; i < a->ndim; i++) result_shape[i] = a->shape[i];
   size_t result_size = a->size;
   float* out = (float*)malloc(result_size * sizeof(float));
-  if (a->ndim == 2) inv_ops(a_float, out, a->shape);
-  else batched_inv_ops(a_float, out, a->shape, a->ndim);
+  if (a->ndim == 2) { inv_ops(a_float, out, a->shape); }
+  else { batched_inv_ops(a_float, out, a->shape, a->ndim); }
   Array* result = create_array(out, a->ndim, result_shape, result_size, a->dtype);
   free(a_float); free(out); free(result_shape);
   return result;
@@ -111,8 +95,8 @@ Array* matrix_rank_array(Array* a) {
     }
   }
   float* out = (float*)malloc(result_size * sizeof(float));
-  if (a->ndim == 2) matrix_rank_ops(a_float, out, a->shape);
-  else batched_matrix_rank_ops(a_float, out, a->shape, a->ndim);
+  if (a->ndim == 2) { matrix_rank_ops(a_float, out, a->shape); }
+  else { batched_matrix_rank_ops(a_float, out, a->shape, a->ndim); }
   Array* result = create_array(out, result_ndim, result_shape, result_size, a->dtype);
   free(a_float); free(out);
   if (result_shape) free(result_shape);
