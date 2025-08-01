@@ -96,7 +96,7 @@ def radd_array_ops(self, other): return self + other
 def rmul_array_ops(self, other): return self * other
 def rsub_array_ops(self, other):
   from .._core import array
-  return array([other], self.dtype)
+  return -(self - other)
 def rdiv_array_ops(self, other):
   from .._core import array
-  return array([other], self.dtype)
+  return (self / other) ** -1

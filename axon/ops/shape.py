@@ -6,7 +6,7 @@ def transpose_array_ops(self):
   from .._core import array
   assert self.ndim <= 3, ".transpose() only supported till 3-d arrays"
   out = array(lib.transpose_array(self.data).contents, self.dtype)
-  out.shape, out.size, out.ndim = ShapeHelp.transpose_shape(self.shape), self.size, self.ndim
+  out.shape, out.size, out.ndim = tuple(ShapeHelp.transpose_shape(self.shape)), self.size, self.ndim
   out.strides = ShapeHelp.get_strides(out.shape)
   return out
 
