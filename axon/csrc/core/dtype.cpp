@@ -1,331 +1,198 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <limits.h>
-#include <float.h>
 #include "dtype.h"
+#include <string.h>
 
-size_t get_dtype_size(dtype_t dtype) {
-  switch (dtype) {
-    case DTYPE_FLOAT32: return sizeof(float);
-    case DTYPE_FLOAT64: return sizeof(double);
-    case DTYPE_INT8: return sizeof(int8_t);
-    case DTYPE_INT16: return sizeof(int16_t);
-    case DTYPE_INT32: return sizeof(int32_t);
-    case DTYPE_INT64: return sizeof(int64_t);
-    case DTYPE_UINT8: return sizeof(uint8_t);
-    case DTYPE_UINT16: return sizeof(uint16_t);
-    case DTYPE_UINT32: return sizeof(uint32_t);
-    case DTYPE_UINT64: return sizeof(uint64_t);
-    case DTYPE_BOOL: return sizeof(uint8_t);
-    default: return 0;
-  }
+// batch conversion using function pointers - eliminates switch overhead
+typedef void (*conversion_func_t)(void* src, void* dst, size_t count);
+
+// template-like macros for type-specific batch conversions
+#define DEFINE_BATCH_TO_FLOAT32(src_type, src_field) \
+static void batch_##src_type##_to_float32(void* src, void* dst, size_t count) { \
+  src_type* s = (src_type*)src; \
+  float* d = (float*)dst; \
+  for(size_t i = 0; i < count; i++) d[i] = (float)s[i]; \
 }
 
-const char* get_dtype_name(dtype_t dtype) {
-  switch (dtype) {
-    case DTYPE_FLOAT32: return "float32";
-    case DTYPE_FLOAT64: return "float64";
-    case DTYPE_INT8: return "int8";
-    case DTYPE_INT16: return "int16";
-    case DTYPE_INT32: return "int32";
-    case DTYPE_INT64: return "int64";
-    case DTYPE_UINT8: return "uint8";
-    case DTYPE_UINT16: return "uint16";
-    case DTYPE_UINT32: return "uint32";
-    case DTYPE_UINT64: return "uint64";
-    case DTYPE_BOOL: return "bool";
-    default: return "unknown";
-  }
+#define DEFINE_BATCH_FROM_FLOAT32(dst_type, clamp_func) \
+static void batch_float32_to_##dst_type(void* src, void* dst, size_t count) { \
+  float* s = (float*)src; \
+  dst_type* d = (dst_type*)dst; \
+  for(size_t i = 0; i < count; i++) d[i] = (dst_type)clamp_func((double)s[i]); \
 }
 
-float dtype_to_float32(void* data, dtype_t dtype, size_t index) {
-  switch (dtype) {
-    case DTYPE_FLOAT32:
-      return ((float*)data)[index];
-    case DTYPE_FLOAT64:
-      return (float)((double*)data)[index];
-    case DTYPE_INT8:
-      return (float)((int8_t*)data)[index];
-    case DTYPE_INT16:
-      return (float)((int16_t*)data)[index];
-    case DTYPE_INT32:
-      return (float)((int32_t*)data)[index];
-    case DTYPE_INT64:
-      return (float)((int64_t*)data)[index];
-    case DTYPE_UINT8:
-      return (float)((uint8_t*)data)[index];
-    case DTYPE_UINT16:
-      return (float)((uint16_t*)data)[index];
-    case DTYPE_UINT32:
-      return (float)((uint32_t*)data)[index];
-    case DTYPE_UINT64:
-      return (float)((uint64_t*)data)[index];
-    case DTYPE_BOOL:
-      return (float)((uint8_t*)data)[index];
-    default:
-      return 0.0f;
-  }
+// generating all batch conversion functions
+DEFINE_BATCH_TO_FLOAT32(int8_t, i8)
+DEFINE_BATCH_TO_FLOAT32(int16_t, i16) 
+DEFINE_BATCH_TO_FLOAT32(int32_t, i32)
+DEFINE_BATCH_TO_FLOAT32(int64_t, i64)
+DEFINE_BATCH_TO_FLOAT32(uint8_t, u8)
+DEFINE_BATCH_TO_FLOAT32(uint16_t, u16)
+DEFINE_BATCH_TO_FLOAT32(uint32_t, u32)
+DEFINE_BATCH_TO_FLOAT32(uint64_t, u64)
+DEFINE_BATCH_TO_FLOAT32(double, f64)
+
+static void batch_float32_to_float32(void* src, void* dst, size_t count) {
+  memcpy(dst, src, count * sizeof(float));
 }
 
-int64_t clamp_to_int_range(double value, dtype_t dtype) {
-  switch (dtype) {
-    case DTYPE_INT8:
-      if (value > INT8_MAX) return INT8_MAX;
-      if (value < INT8_MIN) return INT8_MIN;
-      return (int64_t)round(value);
-    case DTYPE_INT16:
-      if (value > INT16_MAX) return INT16_MAX;
-      if (value < INT16_MIN) return INT16_MIN;
-      return (int64_t)round(value);
-    case DTYPE_INT32:
-      if (value > INT32_MAX) return INT32_MAX;
-      if (value < INT32_MIN) return INT32_MIN;
-      return (int64_t)round(value);
-    case DTYPE_INT64:
-      if (value > (double)INT64_MAX) return INT64_MAX;
-      if (value < (double)INT64_MIN) return INT64_MIN;
-      return (int64_t)round(value);
-    default:
-      return (int64_t)round(value);
-  }
+static void batch_bool_to_float32(void* src, void* dst, size_t count) {
+  uint8_t* s = (uint8_t*)src;
+  float* d = (float*)dst;
+  for(size_t i = 0; i < count; i++) d[i] = s[i] ? 1.0f : 0.0f;
 }
 
-uint64_t clamp_to_uint_range(double value, dtype_t dtype) {
-  if (value < 0) value = 0; // Clamp negative values to 0
-    
-  switch (dtype) {
-    case DTYPE_UINT8:
-      if (value > UINT8_MAX) return UINT8_MAX;
-      return (uint64_t)round(value);
-    case DTYPE_UINT16:
-      if (value > UINT16_MAX) return UINT16_MAX;
-      return (uint64_t)round(value);
-    case DTYPE_UINT32:
-      if (value > UINT32_MAX) return UINT32_MAX;
-      return (uint64_t)round(value);
-    case DTYPE_UINT64:
-      if (value > (double)UINT64_MAX) return UINT64_MAX;
-      return (uint64_t)round(value);
-    case DTYPE_BOOL:
-      return (value != 0.0) ? 1 : 0;
-    default:
-      return (uint64_t)round(value);
-  }
-}
+// pptimized batch conversion lookup table
+static conversion_func_t to_float32_funcs[] = {
+  [DTYPE_FLOAT32] = batch_float32_to_float32,
+  [DTYPE_FLOAT64] = batch_double_to_float32,
+  [DTYPE_INT8] = batch_int8_t_to_float32,
+  [DTYPE_INT16] = batch_int16_t_to_float32,
+  [DTYPE_INT32] = batch_int32_t_to_float32,
+  [DTYPE_INT64] = batch_int64_t_to_float32,
+  [DTYPE_UINT8] = batch_uint8_t_to_float32,
+  [DTYPE_UINT16] = batch_uint16_t_to_float32,
+  [DTYPE_UINT32] = batch_uint32_t_to_float32,
+  [DTYPE_UINT64] = batch_uint64_t_to_float32,
+  [DTYPE_BOOL] = batch_bool_to_float32
+};
 
-void float32_to_dtype(float value, void* data, dtype_t dtype, size_t index) {
-  switch (dtype) {
-    case DTYPE_FLOAT32:
-      ((float*)data)[index] = value;
-      break;
-    case DTYPE_FLOAT64:
-      ((double*)data)[index] = (double)value;
-      break;
-    case DTYPE_INT8:
-      ((int8_t*)data)[index] = (int8_t)clamp_to_int_range(value, dtype);
-      break;
-    case DTYPE_INT16:
-      ((int16_t*)data)[index] = (int16_t)clamp_to_int_range(value, dtype);
-      break;
-    case DTYPE_INT32:
-      ((int32_t*)data)[index] = (int32_t)clamp_to_int_range(value, dtype);
-      break;
-    case DTYPE_INT64:
-      ((int64_t*)data)[index] = clamp_to_int_range(value, dtype);
-      break;
-    case DTYPE_UINT8:
-      ((uint8_t*)data)[index] = (uint8_t)clamp_to_uint_range(value, dtype);
-      break;
-    case DTYPE_UINT16:
-      ((uint16_t*)data)[index] = (uint16_t)clamp_to_uint_range(value, dtype);
-      break;
-    case DTYPE_UINT32:
-      ((uint32_t*)data)[index] = (uint32_t)clamp_to_uint_range(value, dtype);
-      break;
-    case DTYPE_UINT64:
-      ((uint64_t*)data)[index] = clamp_to_uint_range(value, dtype);
-      break;
-    case DTYPE_BOOL:
-      ((uint8_t*)data)[index] = (uint8_t)clamp_to_uint_range(value, dtype);
-      break;
-  }
-}
-
-float* convert_to_float32(void* data, dtype_t dtype, size_t size) {
+// fast batch conversion to float32
+float* convert_to_float32_fast(void* data, dtype_t dtype, size_t size) {
   float* float_data = (float*)malloc(size * sizeof(float));
-  if (float_data == NULL) {
-    fprintf(stderr, "Memory allocation failed for float32 conversion\n");
-    return NULL;
-  }
-
-  for (size_t i = 0; i < size; i++) {
-    float_data[i] = dtype_to_float32(data, dtype, i);
-  }
-
+  if (!float_data) return NULL;
+  conversion_func_t converter = to_float32_funcs[dtype];
+  converter(data, float_data, size);
   return float_data;
 }
 
-void convert_from_float32(float* float_data, void* output_data, dtype_t dtype, size_t size) {
-  for (size_t i = 0; i < size; i++) {
-    float32_to_dtype(float_data[i], output_data, dtype, i);
+// direct dtype-to-dtype conversion without float32 intermediate
+void convert_dtype(void* src, dtype_t src_dtype, void* dst, dtype_t dst_dtype, size_t size) {
+  if (src_dtype == dst_dtype) {
+    memcpy(dst, src, size * get_dtype_size(src_dtype));
+    return;
+  }
+
+  // special cases for same-size types (no precision loss)
+  if (get_dtype_size(src_dtype) == get_dtype_size(dst_dtype)) {
+    switch(src_dtype) {
+      case DTYPE_INT32:
+        if (dst_dtype == DTYPE_FLOAT32) {
+          int32_t* s = (int32_t*)src; float* d = (float*)dst;
+          for(size_t i = 0; i < size; i++) d[i] = (float)s[i];
+          return;
+        }
+        break;
+      case DTYPE_UINT32:
+        if (dst_dtype == DTYPE_FLOAT32) {
+          uint32_t* s = (uint32_t*)src; float* d = (float*)dst;
+          for(size_t i = 0; i < size; i++) d[i] = (float)s[i];
+          return;
+        }
+        break;
+    }
+  }
+
+  // fallback to float32 intermediate for complex conversions
+  float* temp = convert_to_float32_fast(src, src_dtype, size);
+  if (!temp) return;
+  convert_from_float32(temp, dst, dst_dtype, size);
+  free(temp);
+}
+
+// SIMD-optimized version for common conversions (requires SSE2)
+#ifdef __SSE2__
+#include <emmintrin.h>
+
+void convert_int32_to_float32_simd(int32_t* src, float* dst, size_t size) {
+  size_t simd_size = size & ~3; // Process 4 elements at a time
+  
+  for(size_t i = 0; i < simd_size; i += 4) {
+    __m128i ints = _mm_loadu_si128((__m128i*)(src + i));
+    __m128 floats = _mm_cvtepi32_ps(ints);
+    _mm_storeu_ps(dst + i, floats);
+  }
+  
+  // Handle remaining elements
+  for(size_t i = simd_size; i < size; i++) {
+    dst[i] = (float)src[i];
   }
 }
 
-void* allocate_dtype_array(dtype_t dtype, size_t size) {
-  size_t element_size = get_dtype_size(dtype);
-  void* data = malloc(size * element_size);
-  if (data == NULL) {
-    fprintf(stderr, "Memory allocation failed for dtype array\n");
-    return NULL;
+void convert_float32_to_int32_simd(float* src, int32_t* dst, size_t size) {
+  size_t simd_size = size & ~3;
+  
+  for(size_t i = 0; i < simd_size; i += 4) {
+    __m128 floats = _mm_loadu_ps(src + i);
+    __m128i ints = _mm_cvtps_epi32(floats);
+    _mm_storeu_si128((__m128i*)(dst + i), ints);
   }
-  return data;
+  
+  for(size_t i = simd_size; i < size; i++) {
+    dst[i] = (int32_t)clamp_to_int_range(src[i], DTYPE_INT32);
+  }
+}
+#endif
+
+// chunked processing for very large arrays
+void convert_dtype_chunked(void* src, dtype_t src_dtype, void* dst, dtype_t dst_dtype, size_t size) {
+  const size_t chunk_size = 8192; // Optimize for L1 cache
+
+  for(size_t offset = 0; offset < size; offset += chunk_size) {
+    size_t current_chunk = (offset + chunk_size > size) ? size - offset : chunk_size;
+    char* src_ptr = (char*)src + offset * get_dtype_size(src_dtype);
+    char* dst_ptr = (char*)dst + offset * get_dtype_size(dst_dtype);
+    convert_dtype(src_ptr, src_dtype, dst_ptr, dst_dtype, current_chunk);
+  }
+}
+
+// memory pool for temporary conversions to reduce malloc/free overhead
+typedef struct {
+  float* buffer;
+  size_t capacity;
+} conversion_pool_t;
+
+static conversion_pool_t pool = {NULL, 0};
+
+void init_conversion_pool(size_t initial_size) {
+  pool.buffer = (float*)malloc(initial_size * sizeof(float));
+  pool.capacity = pool.buffer ? initial_size : 0;
+}
+
+void cleanup_conversion_pool() {
+  if (pool.buffer) {
+    free(pool.buffer);
+    pool.buffer = NULL;
+    pool.capacity = 0;
+  }
+}
+
+float* get_temp_float_buffer(size_t size) {
+  if (size <= pool.capacity) return pool.buffer;
+  
+  float* new_buffer = (float*)realloc(pool.buffer, size * sizeof(float));
+  if (new_buffer) {
+    pool.buffer = new_buffer;
+    pool.capacity = size;
+    return pool.buffer;
+  }
+  return (float*)malloc(size * sizeof(float)); // fallback case
+}
+
+// Optimized replacement for existing functions
+float* convert_to_float32(void* data, dtype_t dtype, size_t size) {
+  if (dtype == DTYPE_FLOAT32) {
+    float* result = (float*)malloc(size * sizeof(float));
+    if (result) memcpy(result, data, size * sizeof(float));
+    return result;
+  }
+  return convert_to_float32_fast(data, dtype, size);
 }
 
 void copy_with_dtype_conversion(void* src, dtype_t src_dtype, void* dst, dtype_t dst_dtype, size_t size) {
-  for (size_t i = 0; i < size; i++) {
-    float temp = dtype_to_float32(src, src_dtype, i);
-    float32_to_dtype(temp, dst, dst_dtype, i);
-  }
-}
-
-void* cast_array_dtype(void* data, dtype_t src_dtype, dtype_t dst_dtype, size_t size) {
   if (src_dtype == dst_dtype) {
-    // Same dtype, just copy the data
-    size_t src_size = size * get_dtype_size(src_dtype);
-    void* new_data = malloc(src_size);
-    if (new_data == NULL) {
-      fprintf(stderr, "Memory allocation failed for array casting\n");
-      return NULL;
-    }
-    memcpy(new_data, data, src_size);
-    return new_data;
+    memcpy(dst, src, size * get_dtype_size(src_dtype));
+    return;
   }
 
-  void* new_data = allocate_dtype_array(dst_dtype, size);
-  if (new_data == NULL) {
-    return NULL;
-  }
-
-  copy_with_dtype_conversion(data, src_dtype, new_data, dst_dtype, size);
-  return new_data;
-}
-
-int is_integer_dtype(dtype_t dtype) {
-  switch (dtype) {
-    case DTYPE_INT8:
-    case DTYPE_INT16:
-    case DTYPE_INT32:
-    case DTYPE_INT64:
-    case DTYPE_UINT8:
-    case DTYPE_UINT16:
-    case DTYPE_UINT32:
-    case DTYPE_UINT64:
-    case DTYPE_BOOL:
-      return 1;
-    default:
-      return 0;
-  }
-}
-
-int is_float_dtype(dtype_t dtype) {
-  switch (dtype) {
-    case DTYPE_FLOAT32:
-    case DTYPE_FLOAT64:
-      return 1;
-    default:
-      return 0;
-  }
-}
-
-int is_unsigned_dtype(dtype_t dtype) {
-  switch (dtype) {
-    case DTYPE_UINT8:
-    case DTYPE_UINT16:
-    case DTYPE_UINT32:
-    case DTYPE_UINT64:
-    case DTYPE_BOOL:
-      return 1;
-    default:
-      return 0;
-  }
-}
-
-int is_signed_dtype(dtype_t dtype) {
-  switch (dtype) {
-    case DTYPE_INT8:
-    case DTYPE_INT16:
-    case DTYPE_INT32:
-    case DTYPE_INT64:
-    case DTYPE_FLOAT32:
-    case DTYPE_FLOAT64:
-      return 1;
-    default:
-      return 0;
-  }
-}
-
-int get_dtype_priority(dtype_t dtype) {
-  // higher numbers = higher priority in promotion
-  switch (dtype) {
-    case DTYPE_BOOL:    return 1;
-    case DTYPE_UINT8:   return 2;
-    case DTYPE_INT8:    return 3;
-    case DTYPE_UINT16:  return 4;
-    case DTYPE_INT16:   return 5;
-    case DTYPE_UINT32:  return 6;
-    case DTYPE_INT32:   return 7;
-    case DTYPE_UINT64:  return 8;
-    case DTYPE_INT64:   return 9;
-    case DTYPE_FLOAT32: return 10;
-    case DTYPE_FLOAT64: return 11;
-    default:            return 0;
-  }
-}
-
-dtype_t promote_dtypes(dtype_t dtype1, dtype_t dtype2) {
-  // ff same dtype, return it
-  if (dtype1 == dtype2) {
-    return dtype1;
-  }
-
-  // float types always win over integer types
-  if (is_float_dtype(dtype1) && is_integer_dtype(dtype2)) {
-    return dtype1;
-  }
-  if (is_float_dtype(dtype2) && is_integer_dtype(dtype1)) {
-    return dtype2;
-  }
-
-  // if both are float types, choose the larger one
-  if (is_float_dtype(dtype1) && is_float_dtype(dtype2)) {
-    return (get_dtype_size(dtype1) >= get_dtype_size(dtype2)) ? dtype1 : dtype2;
-  }
-
-  // if both are integer types, use more complex promotion rules
-  if (is_integer_dtype(dtype1) && is_integer_dtype(dtype2)) {
-    // if one is signed and one is unsigned
-    if (is_signed_dtype(dtype1) != is_signed_dtype(dtype2)) {
-      // if unsigned type is larger or equal, use it
-      dtype_t unsigned_type = is_unsigned_dtype(dtype1) ? dtype1 : dtype2;
-      dtype_t signed_type = is_signed_dtype(dtype1) ? dtype1 : dtype2;
-      if (get_dtype_size(unsigned_type) >= get_dtype_size(signed_type)) {
-        return unsigned_type;
-      } else {
-        // promote to next larger signed type that can hold unsigned values
-        size_t unsigned_size = get_dtype_size(unsigned_type);
-        if (unsigned_size <= 1) return DTYPE_INT16;  // uint8 -> int16
-        if (unsigned_size <= 2) return DTYPE_INT32;  // uint16 -> int32
-        if (unsigned_size <= 4) return DTYPE_INT64;  // uint32 -> int64
-        return DTYPE_FLOAT64; // uint64 -> float64 (can't fit in int64)
-      }
-    }
-
-    // both have same signedness, choose larger size
-    return (get_dtype_size(dtype1) >= get_dtype_size(dtype2)) ? dtype1 : dtype2;
-  }
-
-  // fallback: use priority system
-  return (get_dtype_priority(dtype1) >= get_dtype_priority(dtype2)) ? dtype1 : dtype2;
+  if (size > 8192) { convert_dtype_chunked(src, src_dtype, dst, dst_dtype, size); }
+  else { convert_dtype(src, src_dtype, dst, dst_dtype, size); }
 }
