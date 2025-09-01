@@ -42,7 +42,6 @@ extern "C" {
   void set_item_array(Array* self, int* indices, float value);
   int get_linear_index(Array* self, int* indices);
 
-
   // contiguous array ops
   int is_contiguous_array(Array* self);
   Array* contiguous_array(Array* self); // making array contiguous - returns new contiguous array
