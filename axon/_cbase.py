@@ -83,8 +83,6 @@ _vector_funcs = {
   'vector_dot': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'vector_matrix_dot': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
   'vector_inner': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'vector_outer': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
   'vector_cross': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'vector_cross_axis': ([POINTER(CArray), POINTER(CArray), c_int], POINTER(CArray)),
-  'linear_1d_array': ([POINTER(CArray), POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'linear_2d_array': ([POINTER(CArray), POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
-  'linear_transform_array': ([POINTER(CArray), POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
   'det_array': ([POINTER(CArray)], POINTER(CArray)), 'batched_det_array': ([POINTER(CArray)], POINTER(CArray)),
   'eig_array': ([POINTER(CArray)], POINTER(CArray)), 'batched_eig_array': ([POINTER(CArray)], POINTER(CArray)),
   'eigv_array': ([POINTER(CArray)], POINTER(CArray)), 'batched_eigv_array': ([POINTER(CArray)], POINTER(CArray)),
@@ -96,8 +94,7 @@ _vector_funcs = {
   'l1_norm_array': ([POINTER(CArray)], POINTER(CArray)), 'l2_norm_array': ([POINTER(CArray)], POINTER(CArray)),
   'qr_array': ([POINTER(CArray)], POINTER(POINTER(CArray))), 'batched_qr_array': ([POINTER(CArray)], POINTER(POINTER(CArray))),
   'lu_array': ([POINTER(CArray)], POINTER(POINTER(CArray))), 'batched_lu_array': ([POINTER(CArray)], POINTER(POINTER(CArray))),
-  'inv_array': ([POINTER(CArray)], POINTER(CArray)), 'matrix_rank_array': ([POINTER(CArray)], POINTER(CArray)),
-  'solve_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'lstsq_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
+  'inv_array': ([POINTER(CArray)], POINTER(CArray)), 'solve_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)), 'lstsq_array': ([POINTER(CArray), POINTER(CArray)], POINTER(CArray)),
   'svd_array': ([POINTER(CArray)], POINTER(POINTER(CArray))), 'cholesky_array': ([POINTER(CArray)], POINTER(CArray))
 }
 
